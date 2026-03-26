@@ -1,0 +1,11 @@
+This folder should contain the following image assets:
+- icon.png         (1024x1024 app icon)
+- splash.png       (1284x2778 splash screen)
+- adaptive-icon.png (1024x1024 Android adaptive icon foreground)
+
+You can generate these with:
+  npx expo generate-assets
+Or use any image editing tool with a purple (#8B5CF6) background and a Brain/MindQuest logo.
+
+For quick testing with Expo Go, you can use placeholder images from:
+  https://via.placeholder.com/1024/8B5CF6/FFFFFF?text=MQ

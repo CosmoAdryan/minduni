@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(node -e \"console.log\\(require\\(''d:/User/Cosmo/Documents/APP-expo/node_modules/nativewind/package.json''\\).version\\)\")",
+      "Bash(node -e \"console.log\\(require\\(''''d:/User/Cosmo/Documents/APP-expo/node_modules/react-native-css-interop/package.json''''\\).version\\)\")",
+      "Bash(node -e \"console.log\\(require\\(''d:/User/Cosmo/Documents/APP-expo/node_modules/@supabase/supabase-js/package.json''\\).dependencies\\)\")",
+      "Bash(node -e \"console.log\\(require\\(''d:/User/Cosmo/Documents/APP-expo/node_modules/@supabase/realtime-js/package.json''\\).version\\)\")"
+    ]
+  }
+}
