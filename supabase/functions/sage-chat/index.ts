@@ -59,6 +59,9 @@ function detectCrisis(message: string): boolean {
   return CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
+// Maximum user messages per calendar day (UTC). Crisis messages always pass.
+const DAILY_MESSAGE_LIMIT = 20;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -73,26 +76,23 @@ serve(async (req) => {
       });
     }
 
-    // Decode JWT payload to get user ID — gateway already validated the token
-    let userId: string;
-    try {
-      const token = authHeader.slice(7);
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      userId = payload.sub;
-      if (!userId) throw new Error('no sub');
-    } catch {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     // Supabase client with user JWT so RLS policies apply
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } }
     );
+
+    // Validate the JWT signature against the auth server (do NOT trust the
+    // unverified payload). getUser() rejects forged/expired tokens.
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = user.id;
 
     const { session_id, message, history, intro, pre_mood } = await req.json();
 
@@ -146,16 +146,15 @@ serve(async (req) => {
     }
     // ── END INTRO FLOW ─────────────────────────────────────────────────────────
 
-    // Save user message
-    await supabase.from('chat_messages').insert({
-      session_id,
-      user_id: userId,
-      role: 'user',
-      content: message,
-    });
-
-    // Detect crisis on server side as well
+    // Detect crisis on the server side as well. Crisis messages are always
+    // answered and are exempt from the daily limit.
     if (detectCrisis(message)) {
+      await supabase.from('chat_messages').insert({
+        session_id,
+        user_id: userId,
+        role: 'user',
+        content: message,
+      });
       const crisisResponse = 'Isso é muito sério e você merece apoio especializado agora. Por favor, ligue para o CVV: 188 (24 horas, gratuito e sigiloso). Você também pode ir ao CAPS mais próximo ou a uma UPA. Você não está sozinho. 💜';
       await supabase.from('chat_messages').insert({
         session_id,
@@ -168,6 +167,34 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Enforce the daily message limit on the server (the client cannot be
+    // trusted to do this). Counts user messages sent since UTC midnight.
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const { count, error: countError } = await supabase
+      .from('chat_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('role', 'user')
+      .gte('created_at', startOfDay.toISOString());
+
+    if (countError) throw new Error(`Failed to check message quota: ${countError.message}`);
+
+    if ((count ?? 0) >= DAILY_MESSAGE_LIMIT) {
+      return new Response(
+        JSON.stringify({ error: 'DAILY_LIMIT_REACHED' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Save user message
+    await supabase.from('chat_messages').insert({
+      session_id,
+      user_id: userId,
+      role: 'user',
+      content: message,
+    });
 
     // Build Gemini history — Gemini requires contents to start with 'user'
     // Map roles and skip any leading 'model' messages (e.g. static intro)
@@ -205,15 +232,18 @@ serve(async (req) => {
 
     const geminiData = await geminiRes.json();
 
-    // Surface Gemini errors clearly
+    // Log Gemini errors server-side only; never leak upstream details to clients.
     if (!geminiRes.ok || geminiData.error) {
       const errMsg = geminiData.error?.message ?? JSON.stringify(geminiData);
-      console.error('Gemini full response:', JSON.stringify(geminiData));
-      throw new Error(`Gemini error ${geminiRes.status}: ${errMsg}`);
+      console.error(`Gemini error ${geminiRes.status}: ${errMsg}`);
+      throw new Error('UPSTREAM_ERROR');
     }
 
     const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!responseText) throw new Error(`Gemini no text. Raw: ${JSON.stringify(geminiData).slice(0, 200)}`);
+    if (!responseText) {
+      console.error('Gemini returned no text:', JSON.stringify(geminiData).slice(0, 500));
+      throw new Error('UPSTREAM_ERROR');
+    }
 
     // Save model response
     await supabase.from('chat_messages').insert({
@@ -228,10 +258,11 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal error';
+    // Log the real cause server-side; return a generic message to the client.
+    console.error('sage-chat error:', error instanceof Error ? error.message : error);
     return new Response(
-      JSON.stringify({ error: message }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Não foi possível processar sua mensagem agora. Tente novamente em instantes.' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
