@@ -147,7 +147,7 @@ export default function LoginPage() {
           </View>
 
           <Text className="text-center text-gray-400 text-xs mt-6">
-            🔒 Seus dados ficam apenas no seu dispositivo
+            🔒 Seus dados são armazenados com segurança e protegidos por criptografia
           </Text>
         </View>
       </ScrollView>
