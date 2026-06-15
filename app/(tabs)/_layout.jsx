@@ -1,12 +1,16 @@
 import { Tabs } from 'expo-router';
-import { LayoutDashboard, MessageCircle, Target, BookOpen, User } from 'lucide-react-native';
+import { View } from 'react-native';
+import { LayoutDashboard, MessageCircle, Clock, BookOpen, User } from 'lucide-react-native';
+import { T } from '../../src/theme';
 
+// Labels renomeados (Chat→Sage, Desafios→Práticas, Perfil→Jornada).
+// Os NOMES de rota (name) permanecem os mesmos — deep links e router.push intactos.
 const TABS = [
   { name: 'index', title: 'Início', Icon: LayoutDashboard },
-  { name: 'chat', title: 'Chat', Icon: MessageCircle },
-  { name: 'challenges', title: 'Desafios', Icon: Target },
+  { name: 'chat', title: 'Sage', Icon: MessageCircle },
+  { name: 'challenges', title: 'Práticas', Icon: Clock },
   { name: 'journal', title: 'Diário', Icon: BookOpen },
-  { name: 'profile', title: 'Perfil', Icon: User },
+  { name: 'profile', title: 'Jornada', Icon: User },
 ];
 
 export default function TabsLayout() {
@@ -14,17 +18,17 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#8B5CF6',
-        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarActiveTintColor: T.g500,
+        tabBarInactiveTintColor: T.s400,
         tabBarStyle: {
-          backgroundColor: 'white',
-          borderTopColor: '#E5E7EB',
-          height: 60,
-          paddingBottom: 8,
+          backgroundColor: '#fff',
+          borderTopColor: T.s200,
+          height: 64,
+          paddingBottom: 10,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
         },
       }}
@@ -35,7 +39,13 @@ export default function TabsLayout() {
           name={name}
           options={{
             title,
-            tabBarIcon: ({ color, size }) => <Icon size={size - 2} color={color} />,
+            tabBarIcon: ({ color, size, focused }) => (
+              <View style={{ alignItems: 'center', justifyContent: 'flex-start' }}>
+                {/* Dot indicator no topo do tab ativo */}
+                <View style={{ width: 18, height: 3, borderRadius: 2, marginBottom: 5, backgroundColor: focused ? T.g500 : 'transparent' }} />
+                <Icon size={size - 2} color={color} strokeWidth={1.8} />
+              </View>
+            ),
           }}
         />
       ))}

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Text, View } from 'react-native';
+import { Zap } from 'lucide-react-native';
 import { useUser } from '../context/UserContext';
+import { T } from '../theme';
 
 /**
  * XPToast — notificação visual animada que aparece no topo da tela
@@ -66,21 +68,24 @@ export default function XPToast() {
     >
       <View
         style={{
-          backgroundColor: '#7C3AED',
-          paddingHorizontal: 22,
+          backgroundColor: T.s900,
+          paddingHorizontal: 14,
           paddingVertical: 10,
-          borderRadius: 28,
+          borderRadius: 12,
           flexDirection: 'row',
           alignItems: 'center',
-          shadowColor: '#6D28D9',
+          gap: 10,
+          shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.35,
-          shadowRadius: 10,
+          shadowOpacity: 0.25,
+          shadowRadius: 20,
           elevation: 10,
         }}
       >
-        <Text style={{ fontSize: 18, marginRight: 8 }}>⚡</Text>
-        <Text style={{ color: 'white', fontWeight: '800', fontSize: 16, letterSpacing: 0.3 }}>
+        <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: T.a50, alignItems: 'center', justifyContent: 'center' }}>
+          <Zap size={16} color={T.a400} fill={T.a400} />
+        </View>
+        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15, letterSpacing: 0.3 }}>
           +{lastAmount.current} XP
         </Text>
       </View>

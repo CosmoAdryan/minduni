@@ -38,7 +38,7 @@ export default function LoginPage() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-purple-50"
+      className="flex-1 bg-stone-50"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -49,11 +49,11 @@ export default function LoginPage() {
         <View className="flex-1 justify-center px-6 py-12">
           {/* Logo */}
           <View className="items-center mb-8">
-            <View className="w-20 h-20 rounded-3xl bg-purple-600 items-center justify-center mb-4 shadow-lg">
+            <View className="w-20 h-20 rounded-3xl bg-sage-500 items-center justify-center mb-4 shadow-lg">
               <Brain size={40} color="white" />
             </View>
-            <Text className="text-3xl font-bold text-gray-800">MindUni</Text>
-            <Text className="text-purple-600 mt-1 text-base">Sua jornada de bem-estar começa aqui</Text>
+            <Text className="text-3xl font-bold text-gray-900">MindUni</Text>
+            <Text className="text-sage-600 mt-1 text-base">Sua jornada de bem-estar começa aqui</Text>
           </View>
 
           {/* Card */}
@@ -117,7 +117,7 @@ export default function LoginPage() {
             ) : null}
 
             <TouchableOpacity
-              className="bg-purple-600 rounded-xl py-4 items-center"
+              className="bg-sage-500 rounded-xl py-4 items-center"
               onPress={handleSubmit}
               disabled={loading}
               accessibilityLabel={isRegister ? 'Criar conta' : 'Entrar na sua conta'}
@@ -139,7 +139,7 @@ export default function LoginPage() {
             >
               <Text className="text-gray-500 text-sm">
                 {isRegister ? 'Já tem conta? ' : 'Não tem conta? '}
-                <Text className="text-purple-600 font-semibold">
+                <Text className="text-sage-600 font-semibold">
                   {isRegister ? 'Entrar' : 'Criar conta'}
                 </Text>
               </Text>
@@ -147,7 +147,7 @@ export default function LoginPage() {
           </View>
 
           <Text className="text-center text-gray-400 text-xs mt-6">
-            🔒 Seus dados são armazenados com segurança e protegidos por criptografia
+            🔒 Protegido com criptografia Supabase
           </Text>
         </View>
       </ScrollView>

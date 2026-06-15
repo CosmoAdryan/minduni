@@ -8,6 +8,7 @@ import { CheckCircle, X, Play, Pause, RotateCcw } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import { getDailyChallenges } from '../../src/data/challenges';
 import { getWeeklyCompletion } from '../../src/services/challengeService';
+import { T } from '../../src/theme';
 
 const DAY_ABBR = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -15,7 +16,7 @@ function WeeklyHeatmap({ weekData }) {
   const today = new Date();
   return (
     <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 1 }}>
-      <Text style={{ fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 10 }}>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: T.s900, marginBottom: 10 }}>
         Atividade da semana
       </Text>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -29,16 +30,16 @@ function WeeklyHeatmap({ weekData }) {
               <View
                 style={{
                   width: 32, height: 32, borderRadius: 8,
-                  backgroundColor: active ? '#8B5CF6' : '#F3F4F6',
+                  backgroundColor: active ? T.g500 : T.s100,
                   borderWidth: isToday ? 2 : 0,
-                  borderColor: '#7C3AED',
+                  borderColor: T.g600,
                   alignItems: 'center', justifyContent: 'center',
                 }}
-                accessibilityLabel={`${dayLabel}: ${active ? 'desafio completado' : 'sem desafios'}`}
+                accessibilityLabel={`${dayLabel}: ${active ? 'prática completada' : 'sem práticas'}`}
               >
-                {active && <Text style={{ fontSize: 14 }}>✓</Text>}
+                {active && <Text style={{ fontSize: 14, color: '#fff' }}>✓</Text>}
               </View>
-              <Text style={{ fontSize: 9, color: isToday ? '#8B5CF6' : '#9CA3AF', fontWeight: isToday ? '700' : '400' }}>
+              <Text style={{ fontSize: 9, color: isToday ? T.g500 : T.s400, fontWeight: isToday ? '700' : '400' }}>
                 {dayLabel}
               </Text>
             </View>
@@ -239,8 +240,8 @@ function BreathingChallenge({ challenge, onComplete, onClose }) {
       </View>
       <View className="flex-1 items-center justify-center">
         <Animated.View
-          className="w-36 h-36 rounded-full bg-indigo-400 items-center justify-center"
-          style={{ transform: [{ scale: scaleAnim }] }}
+          className="w-36 h-36 rounded-full items-center justify-center"
+          style={{ transform: [{ scale: scaleAnim }], backgroundColor: T.g500 }}
           accessibilityLabel={active ? `${phase.name}: ${countdown} segundos` : 'Círculo de respiração'}
         >
           <Text className="text-white text-3xl font-bold">
@@ -253,13 +254,14 @@ function BreathingChallenge({ challenge, onComplete, onClose }) {
         <Text className="text-gray-500 mt-2 text-center">
           {active ? phase.instruction : 'Toque em iniciar para começar'}
         </Text>
-        <Text className="text-purple-600 font-semibold mt-4">
+        <Text style={{ color: T.g500, fontWeight: '600', marginTop: 16 }}>
           Ciclos: {cyclesDone}/{challenge.cycles}
         </Text>
       </View>
       {!active && (
         <TouchableOpacity
-          className="w-full bg-indigo-500 py-4 rounded-2xl items-center"
+          className="w-full py-4 rounded-2xl items-center"
+          style={{ backgroundColor: T.g500 }}
           onPress={() => { setCyclesDone(0); setActive(true); scaleAnim.setValue(1); }}
           accessibilityLabel="Iniciar exercício de respiração"
           accessibilityRole="button"
@@ -299,24 +301,24 @@ export default function ChallengesPage() {
   }
 
   const challengeList = [
-    { ...challenges.mindfulness, type: 'mindfulness', color: '#3B82F6', bg: '#EFF6FF' },
-    { ...challenges.gratitude, type: 'gratitude', color: '#F59E0B', bg: '#FFFBEB' },
-    { ...challenges.breathing, type: 'breathing', color: '#6366F1', bg: '#EEF2FF' },
+    { ...challenges.mindfulness, type: 'mindfulness', color: T.g500, bg: T.g50 },
+    { ...challenges.gratitude, type: 'gratitude', color: T.a400, bg: T.a50 },
+    { ...challenges.breathing, type: 'breathing', color: T.g600, bg: T.g50 },
   ];
 
   const completedCount = challengeList.filter((c) => completed.includes(c.id)).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-purple-50">
+    <SafeAreaView className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        <Text className="text-2xl font-bold text-gray-800 mb-1">Desafios de hoje</Text>
-        <Text className="text-gray-500 mb-4">{completedCount}/3 completos</Text>
+        <Text className="text-2xl font-bold text-gray-900 mb-1">Práticas de hoje</Text>
+        <Text className="text-gray-500 mb-4">{completedCount}/3 completas</Text>
 
         {/* Progress bar */}
         <View className="h-3 bg-gray-200 rounded-full mb-6 overflow-hidden">
           <View
-            className="h-full bg-purple-500 rounded-full"
-            style={{ width: `${(completedCount / 3) * 100}%` }}
+            className="h-full rounded-full"
+            style={{ width: `${(completedCount / 3) * 100}%`, backgroundColor: T.g500 }}
           />
         </View>
 
@@ -345,13 +347,13 @@ export default function ChallengesPage() {
                   <Text style={{ fontSize: 28 }}>{ch.icon}</Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="font-bold text-gray-800">{ch.title}</Text>
+                  <Text className="font-bold text-gray-900">{ch.title}</Text>
                   <Text className="text-sm text-gray-500 mt-0.5">{ch.description}</Text>
                   <Text className="text-xs font-semibold mt-1" style={{ color: ch.color }}>
                     +{ch.xp} XP
                   </Text>
                 </View>
-                {isDone && <CheckCircle size={24} color="#10B981" />}
+                {isDone && <CheckCircle size={24} color={T.g500} />}
               </View>
             </TouchableOpacity>
           );

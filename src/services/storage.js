@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   JOURNAL: 'minduni_journal',
   GRATITUDE: 'minduni_gratitude',
   ONBOARDING: 'minduni_onboarding_done',
+  DIARY_OPENED: 'minduni_has_opened_diary',
 };
 
 export function challengeKey(date) {

@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, Animated, Easing } from 'react-native';
 import { useUser } from '../context/UserContext';
 import { LEVELS } from '../context/UserContext';
+import { T } from '../theme';
 
 export default function XPBar({ compact = false }) {
   const { progress, levelInfo, nextLevel } = useUser();
@@ -14,50 +15,56 @@ export default function XPBar({ compact = false }) {
   const percent = range > 0 ? Math.min(100, Math.round((gained / range) * 100)) : 100;
   const isMax = levelInfo.level === 10;
 
+  // Animação de preenchimento (material ease, 700ms) ao mudar a porcentagem.
+  const fill = useRef(new Animated.Value(percent)).current;
+  useEffect(() => {
+    Animated.timing(fill, {
+      toValue: percent,
+      duration: 700,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [percent]);
+  const widthInterp = fill.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
+
   if (compact) {
     return (
       <View className="px-3 py-2">
         <View className="flex-row justify-between items-center mb-1">
-          <Text className="text-xs font-semibold text-purple-700">Nível {levelInfo.level}</Text>
-          <Text className="text-xs text-gray-500">{isMax ? 'MAX' : `${percent}%`}</Text>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: T.g700 }}>Nível {levelInfo.level}</Text>
+          <Text style={{ fontSize: 11, color: T.s500 }}>{isMax ? 'MAX' : `${percent}%`}</Text>
         </View>
-        <View className="h-2 bg-purple-100 rounded-full overflow-hidden">
-          <View
-            className="h-full bg-purple-500 rounded-full"
-            style={{ width: `${percent}%` }}
-          />
+        <View style={{ height: 8, backgroundColor: T.g50, borderRadius: 99, overflow: 'hidden' }}>
+          <Animated.View style={{ height: '100%', width: widthInterp, backgroundColor: T.g500, borderRadius: 99 }} />
         </View>
       </View>
     );
   }
 
   return (
-    <View className="bg-white rounded-2xl p-4 shadow-sm">
+    <View
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: percent, text: isMax ? 'Nível máximo' : `${percent}% para o próximo nível` }}
+    >
       <View className="flex-row justify-between items-center mb-2">
         <View>
-          <Text className="text-lg font-bold text-gray-800">Nível {levelInfo.level}</Text>
-          <Text className="text-sm text-purple-600 font-medium">{levelInfo.name}</Text>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: T.s900 }}>Nível {levelInfo.level}</Text>
+          <Text style={{ fontSize: 13, color: T.g500, fontWeight: '600' }}>{levelInfo.name}</Text>
         </View>
         <View className="items-end">
-          <Text className="text-2xl font-bold text-purple-600">{currentXP}</Text>
-          <Text className="text-xs text-gray-500">XP total</Text>
+          <Text style={{ fontSize: 24, fontWeight: '800', color: T.g500 }}>{currentXP}</Text>
+          <Text style={{ fontSize: 11, color: T.s400 }}>XP total</Text>
         </View>
       </View>
-      <View className="h-3 bg-purple-100 rounded-full overflow-hidden mb-1">
-        <View
-          className="h-full rounded-full"
-          style={{
-            width: `${percent}%`,
-            backgroundColor: '#8B5CF6',
-          }}
-        />
+      <View style={{ height: 6, backgroundColor: T.g50, borderRadius: 99, overflow: 'hidden', marginBottom: 4 }}>
+        <Animated.View style={{ height: '100%', width: widthInterp, backgroundColor: T.g500, borderRadius: 99 }} />
       </View>
       <View className="flex-row justify-between">
-        <Text className="text-xs text-gray-500">{currentXP} XP</Text>
+        <Text style={{ fontSize: 11, color: T.s400 }}>{currentXP} XP</Text>
         {isMax ? (
-          <Text className="text-xs font-bold text-purple-600">NÍVEL MÁXIMO!</Text>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: T.g500 }}>NÍVEL MÁXIMO!</Text>
         ) : (
-          <Text className="text-xs text-gray-500">{nextLevelXP} XP</Text>
+          <Text style={{ fontSize: 11, color: T.s400 }}>{nextLevelXP} XP</Text>
         )}
       </View>
     </View>

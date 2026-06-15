@@ -4,7 +4,7 @@ export const MINDFULNESS_CHALLENGES = [
     title: 'Respiração Consciente',
     description: 'Foque sua atenção na respiração por 5 minutos',
     icon: '🧘',
-    color: 'bg-blue-500',
+    color: 'bg-sage-500',
     xp: 30,
     duration: 300,
     steps: [
@@ -20,7 +20,7 @@ export const MINDFULNESS_CHALLENGES = [
     title: 'Escaneamento Corporal',
     description: 'Conecte-se com seu corpo por 5 minutos',
     icon: '🌿',
-    color: 'bg-teal-500',
+    color: 'bg-sage-400',
     xp: 30,
     duration: 300,
     steps: [
@@ -39,7 +39,7 @@ export const GRATITUDE_CHALLENGES = [
     title: 'Três Gratidões',
     description: 'Reflita sobre 3 coisas boas do seu dia',
     icon: '🙏',
-    color: 'bg-yellow-500',
+    color: 'bg-xp-main',
     xp: 25,
     prompts: [
       'Algo que aconteceu hoje que te deixou feliz...',
@@ -52,7 +52,7 @@ export const GRATITUDE_CHALLENGES = [
     title: 'Carta de Gratidão',
     description: 'Escreva sobre momentos positivos',
     icon: '💌',
-    color: 'bg-pink-500',
+    color: 'bg-xp-main',
     xp: 25,
     prompts: [
       'Um desafio superado recentemente...',
@@ -68,7 +68,7 @@ export const BREATHING_CHALLENGES = [
     title: 'Respiração 4-7-8',
     description: 'Técnica calmante para reduzir ansiedade',
     icon: '💨',
-    color: 'bg-indigo-500',
+    color: 'bg-sage-600',
     xp: 20,
     cycles: 4,
     phases: [
@@ -82,7 +82,7 @@ export const BREATHING_CHALLENGES = [
     title: 'Respiração Quadrada',
     description: 'Box breathing para clareza mental',
     icon: '🔲',
-    color: 'bg-purple-500',
+    color: 'bg-sage-500',
     xp: 20,
     cycles: 4,
     phases: [
