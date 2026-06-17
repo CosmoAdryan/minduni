@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Modal, TextInput,
-  SafeAreaView, Animated,
+  SafeAreaView,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withRepeat,
+  Easing,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { CheckCircle, X, Play, Pause, RotateCcw } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
@@ -15,7 +22,7 @@ function WeeklyHeatmap({ weekData }) {
   const today = new Date();
   return (
     <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 1 }}>
-      <Text style={{ fontSize: 13, fontWeight: '700', color: '#1F2937', marginBottom: 10 }}>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: '#1C1917', marginBottom: 10 }}>
         Atividade da semana
       </Text>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -29,16 +36,16 @@ function WeeklyHeatmap({ weekData }) {
               <View
                 style={{
                   width: 32, height: 32, borderRadius: 8,
-                  backgroundColor: active ? '#8B5CF6' : '#F3F4F6',
+                  backgroundColor: active ? '#3D7A67' : '#F4F2EE',
                   borderWidth: isToday ? 2 : 0,
-                  borderColor: '#7C3AED',
+                  borderColor: '#2D6254',
                   alignItems: 'center', justifyContent: 'center',
                 }}
                 accessibilityLabel={`${dayLabel}: ${active ? 'desafio completado' : 'sem desafios'}`}
               >
                 {active && <Text style={{ fontSize: 14 }}>✓</Text>}
               </View>
-              <Text style={{ fontSize: 9, color: isToday ? '#8B5CF6' : '#9CA3AF', fontWeight: isToday ? '700' : '400' }}>
+              <Text style={{ fontSize: 9, color: isToday ? '#3D7A67' : '#A29D95', fontWeight: isToday ? '700' : '400' }}>
                 {dayLabel}
               </Text>
             </View>
@@ -84,9 +91,9 @@ function MindfulnessChallenge({ challenge, onComplete, onClose }) {
   return (
     <View className="flex-1 p-6">
       <View className="flex-row justify-between items-center mb-6">
-        <Text className="text-xl font-bold text-gray-800">{challenge.title}</Text>
+        <Text className="text-xl font-bold text-stone-900">{challenge.title}</Text>
         <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar desafio" accessibilityRole="button">
-          <X size={24} color="#6B7280" />
+          <X size={24} color="#756F66" />
         </TouchableOpacity>
       </View>
       <View className="items-center mb-8">
@@ -119,12 +126,12 @@ function MindfulnessChallenge({ challenge, onComplete, onClose }) {
           <Text className="text-white font-bold">{running ? 'Pausar' : 'Iniciar'}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          className="w-14 bg-gray-100 rounded-2xl items-center justify-center"
+          className="w-14 bg-stone-200 rounded-2xl items-center justify-center"
           onPress={() => { setRunning(false); setTimeLeft(challenge.duration); setCurrentStep(0); }}
           accessibilityLabel="Reiniciar timer"
           accessibilityRole="button"
         >
-          <RotateCcw size={20} color="#6B7280" />
+          <RotateCcw size={20} color="#756F66" />
         </TouchableOpacity>
       </View>
     </View>
@@ -138,9 +145,9 @@ function GratitudeChallenge({ challenge, onComplete, onClose }) {
   return (
     <View className="flex-1 p-6">
       <View className="flex-row justify-between items-center mb-6">
-        <Text className="text-xl font-bold text-gray-800">{challenge.title}</Text>
+        <Text className="text-xl font-bold text-stone-900">{challenge.title}</Text>
         <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar desafio" accessibilityRole="button">
-          <X size={24} color="#6B7280" />
+          <X size={24} color="#756F66" />
         </TouchableOpacity>
       </View>
       <ScrollView className="flex-1">
@@ -148,7 +155,7 @@ function GratitudeChallenge({ challenge, onComplete, onClose }) {
           <View key={i} className="mb-4">
             <Text className="text-sm font-medium text-yellow-700 mb-2">{prompt}</Text>
             <TextInput
-              className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-gray-800 min-h-16"
+              className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-stone-900 min-h-16"
               placeholder="Escreva aqui..."
               value={answers[i]}
               onChangeText={(t) => {
@@ -163,14 +170,14 @@ function GratitudeChallenge({ challenge, onComplete, onClose }) {
         ))}
       </ScrollView>
       <TouchableOpacity
-        className={`py-4 rounded-2xl items-center mt-4 ${allFilled ? 'bg-yellow-500' : 'bg-gray-200'}`}
+        className={`py-4 rounded-2xl items-center mt-4 ${allFilled ? 'bg-yellow-500' : 'bg-stone-200'}`}
         onPress={onComplete}
         disabled={!allFilled}
         accessibilityLabel={`Salvar gratidões e ganhar ${challenge.xp} XP`}
         accessibilityRole="button"
         accessibilityState={{ disabled: !allFilled }}
       >
-        <Text className={`font-bold ${allFilled ? 'text-white' : 'text-gray-400'}`}>
+        <Text className={`font-bold ${allFilled ? 'text-white' : 'text-stone-400'}`}>
           Salvar gratidões (+{challenge.xp} XP)
         </Text>
       </TouchableOpacity>
@@ -178,19 +185,37 @@ function GratitudeChallenge({ challenge, onComplete, onClose }) {
   );
 }
 
+// Cores do círculo por fase (tokens sage): inspire = presença, hold = mais
+// denso, expire = liberação.
+const PHASE_COLOR = {
+  Inspire: '#3D7A67', // sage-500
+  Segure: '#2D6254',  // sage-600
+  Espere: '#2D6254',  // sage-600 (box breathing)
+  Expire: '#5E9B84',  // sage-400
+};
+
 function BreathingChallenge({ challenge, onComplete, onClose }) {
   const [active, setActive] = useState(false);
   const [phaseIdx, setPhaseIdx] = useState(0);
   const [countdown, setCountdown] = useState(null);
   const [cyclesDone, setCyclesDone] = useState(0);
-  const scaleAnim = useRef(new Animated.Value(1)).current;
   const timerRef = useRef(null);
+
+  // Escala do círculo (1.0 ↔ 1.6) e pulso do anel durante o "segure".
+  const scale = useSharedValue(1);
+  const pulse = useSharedValue(0);
+  const holdSV = useSharedValue(0);
 
   useEffect(() => {
     if (!active) return;
     runPhase(0, 0);
     return () => clearTimeout(timerRef.current);
   }, [active]);
+
+  // Pulso contínuo do anel — só fica visível durante a fase "segure" (holdSV).
+  useEffect(() => {
+    pulse.value = withRepeat(withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }), -1);
+  }, []);
 
   function runPhase(pIdx, cycleCount) {
     if (cycleCount >= challenge.cycles) {
@@ -202,17 +227,29 @@ function BreathingChallenge({ challenge, onComplete, onClose }) {
     const phase = challenge.phases[pIdx];
     setPhaseIdx(pIdx);
     setCountdown(phase.duration);
-    const isInspire = phase.name === 'Inspire';
-    Animated.timing(scaleAnim, {
-      toValue: isInspire ? 1.5 : 0.8,
-      duration: phase.duration * 1000,
-      useNativeDriver: true,
-    }).start();
+
+    const ms = phase.duration * 1000;
+    const ease = Easing.inOut(Easing.ease);
+    if (phase.name === 'Inspire') {
+      scale.value = withTiming(1.6, { duration: ms, easing: ease });
+      holdSV.value = withTiming(0, { duration: 300 });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); // início do ciclo
+    } else if (phase.name === 'Expire') {
+      scale.value = withTiming(1.0, { duration: ms, easing: ease });
+      holdSV.value = withTiming(0, { duration: 300 });
+    } else {
+      // Segure / Espere — mantém a escala, ativa o pulso do anel.
+      holdSV.value = withTiming(1, { duration: 300 });
+    }
+
     let remaining = phase.duration;
     const tick = () => {
       remaining--;
       setCountdown(remaining);
       if (remaining <= 0) {
+        if (phase.name === 'Expire') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); // fim do ciclo
+        }
         const nextPhase = pIdx + 1;
         if (nextPhase >= challenge.phases.length) {
           runPhase(0, cycleCount + 1);
@@ -228,39 +265,56 @@ function BreathingChallenge({ challenge, onComplete, onClose }) {
   }
 
   const phase = challenge.phases[phaseIdx];
+  const circleColor = active ? (PHASE_COLOR[phase.name] || '#3D7A67') : '#A9D3BF';
+
+  const circleStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: holdSV.value * 0.4 * (1 - pulse.value),
+    transform: [{ scale: 1 + 0.5 * pulse.value }],
+  }));
 
   return (
     <View className="flex-1 p-6 items-center">
       <View className="flex-row justify-between items-center w-full mb-6">
-        <Text className="text-xl font-bold text-gray-800">{challenge.title}</Text>
+        <Text className="text-xl font-bold text-stone-900">{challenge.title}</Text>
         <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar desafio" accessibilityRole="button">
-          <X size={24} color="#6B7280" />
+          <X size={24} color="#756F66" />
         </TouchableOpacity>
       </View>
       <View className="flex-1 items-center justify-center">
-        <Animated.View
-          className="w-36 h-36 rounded-full bg-indigo-400 items-center justify-center"
-          style={{ transform: [{ scale: scaleAnim }] }}
-          accessibilityLabel={active ? `${phase.name}: ${countdown} segundos` : 'Círculo de respiração'}
-        >
-          <Text className="text-white text-3xl font-bold">
-            {active && countdown !== null ? countdown : ''}
-          </Text>
-        </Animated.View>
-        <Text className="text-2xl font-bold text-gray-800 mt-8">
+        <View className="w-44 h-44 items-center justify-center">
+          {/* Anel que pulsa durante o "segure" */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              { position: 'absolute', width: 144, height: 144, borderRadius: 999, borderWidth: 2, borderColor: '#3D7A67' },
+              ringStyle,
+            ]}
+          />
+          <Animated.View
+            className="w-36 h-36 rounded-full items-center justify-center"
+            style={[{ backgroundColor: circleColor }, circleStyle]}
+            accessibilityLabel={active ? `${phase.name}: ${countdown} segundos` : 'Círculo de respiração'}
+          >
+            <Text className="text-white text-3xl font-bold" style={{ fontVariant: ['tabular-nums'] }}>
+              {active && countdown !== null ? countdown : ''}
+            </Text>
+          </Animated.View>
+        </View>
+        <Text className="text-2xl font-bold text-stone-900 mt-8">
           {active ? phase.name : 'Pronto?'}
         </Text>
-        <Text className="text-gray-500 mt-2 text-center">
+        <Text className="text-stone-500 mt-2 text-center">
           {active ? phase.instruction : 'Toque em iniciar para começar'}
         </Text>
-        <Text className="text-purple-600 font-semibold mt-4">
+        <Text className="text-sage-500 font-semibold mt-4">
           Ciclos: {cyclesDone}/{challenge.cycles}
         </Text>
       </View>
       {!active && (
         <TouchableOpacity
-          className="w-full bg-indigo-500 py-4 rounded-2xl items-center"
-          onPress={() => { setCyclesDone(0); setActive(true); scaleAnim.setValue(1); }}
+          className="w-full bg-sage-500 py-4 rounded-2xl items-center"
+          onPress={() => { setCyclesDone(0); scale.value = withTiming(1, { duration: 200 }); setActive(true); }}
           accessibilityLabel="Iniciar exercício de respiração"
           accessibilityRole="button"
         >
@@ -300,22 +354,22 @@ export default function ChallengesPage() {
 
   const challengeList = [
     { ...challenges.mindfulness, type: 'mindfulness', color: '#3B82F6', bg: '#EFF6FF' },
-    { ...challenges.gratitude, type: 'gratitude', color: '#F59E0B', bg: '#FFFBEB' },
+    { ...challenges.gratitude, type: 'gratitude', color: '#D4973E', bg: '#FFFBEB' },
     { ...challenges.breathing, type: 'breathing', color: '#6366F1', bg: '#EEF2FF' },
   ];
 
   const completedCount = challengeList.filter((c) => completed.includes(c.id)).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-purple-50">
+    <SafeAreaView className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        <Text className="text-2xl font-bold text-gray-800 mb-1">Desafios de hoje</Text>
-        <Text className="text-gray-500 mb-4">{completedCount}/3 completos</Text>
+        <Text className="text-2xl font-bold text-stone-900 mb-1">Desafios de hoje</Text>
+        <Text className="text-stone-500 mb-4">{completedCount}/3 completos</Text>
 
         {/* Progress bar */}
-        <View className="h-3 bg-gray-200 rounded-full mb-6 overflow-hidden">
+        <View className="h-3 bg-stone-200 rounded-full mb-6 overflow-hidden">
           <View
-            className="h-full bg-purple-500 rounded-full"
+            className="h-full bg-sage-500 rounded-full"
             style={{ width: `${(completedCount / 3) * 100}%` }}
           />
         </View>
@@ -345,8 +399,8 @@ export default function ChallengesPage() {
                   <Text style={{ fontSize: 28 }}>{ch.icon}</Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="font-bold text-gray-800">{ch.title}</Text>
-                  <Text className="text-sm text-gray-500 mt-0.5">{ch.description}</Text>
+                  <Text className="font-bold text-stone-900">{ch.title}</Text>
+                  <Text className="text-sm text-stone-500 mt-0.5">{ch.description}</Text>
                   <Text className="text-xs font-semibold mt-1" style={{ color: ch.color }}>
                     +{ch.xp} XP
                   </Text>

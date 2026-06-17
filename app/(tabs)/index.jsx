@@ -4,20 +4,23 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MessageCircle, Target, BookOpen, User, Flame, Award, Zap, ChevronRight } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../src/context/UserContext';
 import XPBar from '../../src/components/XPBar';
+import StreakCard from '../../src/components/StreakCard';
 import { getDailyChallenges } from '../../src/data/challenges';
 import { getCompletedToday } from '../../src/services/challengeService';
 
 const QUICK_ACTIONS = [
-  { title: 'Chat com Sage', icon: MessageCircle, color: '#8B5CF6', bg: '#EDE9FE', route: '/chat' },
-  { title: 'Desafios', icon: Target, color: '#10B981', bg: '#D1FAE5', route: '/challenges' },
-  { title: 'Diário', icon: BookOpen, color: '#F59E0B', bg: '#FEF3C7', route: '/journal' },
-  { title: 'Perfil', icon: User, color: '#6366F1', bg: '#EEF2FF', route: '/profile' },
+  { title: 'Conversar com o Sage', icon: MessageCircle, color: '#3D7A67', bg: '#D4E9DE', route: '/chat' },
+  { title: 'Práticas', icon: Target, color: '#3D7A67', bg: '#EEF5F1', route: '/challenges' },
+  { title: 'Diário', icon: BookOpen, color: '#D4973E', bg: '#FEF8EC', route: '/journal' },
+  { title: 'Jornada', icon: User, color: '#5A544C', bg: '#F4F2EE', route: '/profile' },
 ];
 
 const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-const MOOD_COLORS = ['#EF4444', '#F97316', '#F59E0B', '#10B981', '#8B5CF6'];
+// Escala Jonauskaite (2020) — tristeza é azul profundo, nunca vermelho.
+const MOOD_COLORS = ['#3B6FAB', '#6B8FAB', '#888787', '#5E9B84', '#C9963A'];
 const MOOD_EMOJIS = ['😢', '😔', '😐', '😊', '😄'];
 
 function MoodChart({ moodData }) {
@@ -28,14 +31,14 @@ function MoodChart({ moodData }) {
     avg >= 4
       ? 'Sua semana foi excelente! Continue assim 🌟'
       : avg >= 3
-      ? 'Semana estável. Pequenos passos importam 💜'
+      ? 'Semana estável. Pequenos passos importam 💚'
       : 'Semana desafiadora. O Sage está aqui para te ouvir 💙';
 
   return (
     <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 16, elevation: 1 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2937' }}>Humor recente</Text>
-        <Text style={{ fontSize: 12, color: '#8B5CF6', fontWeight: '600' }}>
+        <Text style={{ fontSize: 15, fontWeight: '700', color: '#1C1917' }}>Humor recente</Text>
+        <Text style={{ fontSize: 12, color: '#3D7A67', fontWeight: '600' }}>
           Média: {MOOD_EMOJIS[Math.round(avg) - 1]}
         </Text>
       </View>
@@ -50,7 +53,7 @@ function MoodChart({ moodData }) {
                 <View
                   style={{ width: 20, borderRadius: 6, height: barH, backgroundColor: MOOD_COLORS[m.mood - 1], opacity: 0.85 }}
                 />
-                <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 3 }}>{dayLabel}</Text>
+                <Text style={{ fontSize: 9, color: '#A29D95', marginTop: 3 }}>{dayLabel}</Text>
               </View>
             );
           })}
@@ -65,13 +68,13 @@ function MoodChart({ moodData }) {
             // 12px = espaço dos labels de dia; avg bar height proporcional a 60px de área
             bottom: 12 + Math.max(8, (avg / 5) * 60),
             height: 1.5,
-            backgroundColor: '#8B5CF6',
+            backgroundColor: '#3D7A67',
             opacity: 0.55,
             borderRadius: 1,
           }}
         />
       </View>
-      <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 4, fontStyle: 'italic' }}>{insight}</Text>
+      <Text style={{ fontSize: 12, color: '#756F66', marginTop: 4, fontStyle: 'italic' }}>{insight}</Text>
     </View>
   );
 }
@@ -81,6 +84,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [featuredChallenge, setFeaturedChallenge] = useState(null);
   const [loadingChallenge, setLoadingChallenge] = useState(true);
+  const [showStreak, setShowStreak] = useState(false);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -107,20 +111,33 @@ export default function Dashboard() {
     loadFeaturedChallenge();
   }, []);
 
+  // Streak pop — só no primeiro acesso do dia (flag por data no AsyncStorage).
+  useEffect(() => {
+    if (loading || !(progress.streak > 0)) return;
+    (async () => {
+      const today = new Date().toDateString();
+      const last = await AsyncStorage.getItem('minduni_streak_pop');
+      if (last !== today) {
+        setShowStreak(true);
+        await AsyncStorage.setItem('minduni_streak_pop', today);
+      }
+    })();
+  }, [loading, progress.streak]);
+
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-purple-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#8B5CF6" />
+      <SafeAreaView className="flex-1 bg-stone-50 items-center justify-center">
+        <ActivityIndicator size="large" color="#3D7A67" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-purple-50">
+    <SafeAreaView className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }}>
         {/* Header */}
-        <View className="bg-purple-600 px-6 pt-6 pb-10">
-          <Text className="text-purple-200 text-sm">{greeting},</Text>
+        <View className="bg-sage-500 px-6 pt-6 pb-10">
+          <Text className="text-sage-100 text-sm">{greeting},</Text>
           <Text className="text-white text-2xl font-bold">{firstName}! 👋</Text>
         </View>
 
@@ -133,11 +150,14 @@ export default function Dashboard() {
             <XPBar />
           </View>
 
+          {/* Streak pop — primeiro acesso do dia */}
+          {showStreak && <StreakCard streak={progress.streak} />}
+
           {/* Featured Challenge — Desafio do Dia */}
           {!loadingChallenge && (
             <TouchableOpacity
               className="rounded-2xl p-4 mb-4 shadow-md"
-              style={{ backgroundColor: featuredChallenge ? '#7C3AED' : '#F0FDF4', borderWidth: featuredChallenge ? 0 : 1, borderColor: '#BBF7D0' }}
+              style={{ backgroundColor: featuredChallenge ? '#2D6254' : '#F0FDF4', borderWidth: featuredChallenge ? 0 : 1, borderColor: '#BBF7D0' }}
               onPress={() => router.push('/challenges')}
               accessibilityLabel={featuredChallenge ? `Desafio do dia: ${featuredChallenge.title}, +${featuredChallenge.xp} XP` : 'Todos os desafios concluídos hoje'}
               accessibilityRole="button"
@@ -172,23 +192,23 @@ export default function Dashboard() {
           <View className="flex-row gap-3 mb-4">
             <View className="flex-1 bg-white rounded-2xl p-3 shadow-sm items-center" accessibilityLabel={`Streak: ${progress.streak || 0} dias seguidos`}>
               <Flame size={22} color="#F97316" />
-              <Text className="text-xl font-bold text-gray-800 mt-1">{progress.streak || 0}</Text>
-              <Text className="text-xs text-gray-500">Dias</Text>
+              <Text className="text-xl font-bold text-stone-900 mt-1">{progress.streak || 0}</Text>
+              <Text className="text-xs text-stone-500">Dias</Text>
             </View>
             <View className="flex-1 bg-white rounded-2xl p-3 shadow-sm items-center" accessibilityLabel={`${(progress.unlockedBadges || []).length} conquistas`}>
-              <Award size={22} color="#8B5CF6" />
-              <Text className="text-xl font-bold text-gray-800 mt-1">{(progress.unlockedBadges || []).length}</Text>
-              <Text className="text-xs text-gray-500">Badges</Text>
+              <Award size={22} color="#3D7A67" />
+              <Text className="text-xl font-bold text-stone-900 mt-1">{(progress.unlockedBadges || []).length}</Text>
+              <Text className="text-xs text-stone-500">Badges</Text>
             </View>
             <View className="flex-1 bg-white rounded-2xl p-3 shadow-sm items-center" accessibilityLabel={`${progress.totalXP || 0} XP total`}>
-              <Zap size={22} color="#F59E0B" />
-              <Text className="text-xl font-bold text-gray-800 mt-1">{progress.totalXP || 0}</Text>
-              <Text className="text-xs text-gray-500">XP</Text>
+              <Zap size={22} color="#D4973E" />
+              <Text className="text-xl font-bold text-stone-900 mt-1">{progress.totalXP || 0}</Text>
+              <Text className="text-xs text-stone-500">XP</Text>
             </View>
           </View>
 
           {/* Quick Actions */}
-          <Text className="text-base font-bold text-gray-800 mb-3">Ações rápidas</Text>
+          <Text className="text-base font-bold text-stone-900 mb-3">Ações rápidas</Text>
           <View className="flex-row flex-wrap gap-3 mb-4">
             {QUICK_ACTIONS.map(({ title, icon: Icon, color, bg, route }) => (
               <TouchableOpacity
@@ -202,7 +222,7 @@ export default function Dashboard() {
                 <View className="w-12 h-12 rounded-2xl items-center justify-center mb-2" style={{ backgroundColor: bg }}>
                   <Icon size={24} color={color} />
                 </View>
-                <Text className="text-sm font-semibold text-gray-700 text-center">{title}</Text>
+                <Text className="text-sm font-semibold text-stone-700 text-center">{title}</Text>
               </TouchableOpacity>
             ))}
           </View>

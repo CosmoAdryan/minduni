@@ -15,6 +15,8 @@ module.exports = function (api) {
           },
         },
       ],
+      // Reanimated deve ser SEMPRE o último plugin.
+      "react-native-reanimated/plugin",
     ],
   };
 };

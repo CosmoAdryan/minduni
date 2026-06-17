@@ -82,7 +82,7 @@ export const BREATHING_CHALLENGES = [
     title: 'Respiração Quadrada',
     description: 'Box breathing para clareza mental',
     icon: '🔲',
-    color: 'bg-purple-500',
+    color: 'bg-sage-500',
     xp: 20,
     cycles: 4,
     phases: [

@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindUni — Fase 4 / Bloco 4: Handoff</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:ital,wght@1,400;1,500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --s50:#FAFAF8;--s100:#F4F2EE;--s200:#E6E2DB;--s300:#CEC9BF;
+  --s400:#A29D95;--s500:#756F66;--s600:#5A544C;--s700:#3A3731;
+  --s800:#282521;--s900:#1C1917;
+  --g50:#EEF5F1;--g100:#D4E9DE;--g200:#A9D3BF;
+  --g400:#5E9B84;--g500:#3D7A67;--g600:#2D6254;--g700:#1E4D41;
+  --a50:#FEF8EC;--a100:#FCEECE;--a400:#D4973E;--a500:#B87A28;
+  --cr:#C04A4A;--cr-l:#FDF2F2;--cr-b:#F5C6C6;
+}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--s100);color:var(--s900);font-size:14px;line-height:1.6}
+
+.dh{background:var(--s900);color:#fff;padding:48px 0 36px}
+.dh .in{max-width:1280px;margin:0 auto;padding:0 48px}
+.phase-tag{display:inline-flex;align-items:center;gap:8px;background:var(--g700);color:var(--g100);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:99px;margin-bottom:14px}
+.dh h1{font-size:30px;font-weight:800;letter-spacing:-.025em;margin-bottom:6px}
+.dh p{font-size:13px;color:var(--s400)}
+.dh .meta{display:flex;gap:20px;margin-top:16px;flex-wrap:wrap}
+.dh .meta span{font-size:11px;color:var(--s500);display:flex;align-items:center;gap:5px}
+
+nav{background:#fff;border-bottom:1px solid var(--s200);position:sticky;top:0;z-index:200;overflow-x:auto}
+nav .in{max-width:1280px;margin:0 auto;padding:0 48px;display:flex;white-space:nowrap}
+nav a{display:block;padding:13px 16px;font-size:12px;font-weight:600;color:var(--s400);text-decoration:none;border-bottom:2px solid transparent}
+nav a:hover{color:var(--g500);border-bottom-color:var(--g500)}
+
+.page{max-width:1280px;margin:0 auto;padding:0 48px 120px}
+.sec{padding:56px 0;border-bottom:1px solid var(--s200);scroll-margin-top:54px}
+.sec:last-child{border-bottom:none}
+.sec-num{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--s400);margin-bottom:4px}
+.sec-title{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.sec-sub{font-size:13px;color:var(--s500);margin-bottom:28px;max-width:620px}
+
+/* code block */
+.code{background:var(--s900);color:#E2DDD8;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;padding:22px 26px;border-radius:14px;overflow-x:auto;white-space:pre;line-height:1.65}
+.ck{color:#C084FC}.cv{color:#86EFAC}.cs{color:#FCA5A5}.cn{color:#93C5FD}.cg{color:#6B7280}.co{color:#FCD34D}
+
+/* cards */
+.card{background:#fff;border:1px solid var(--s200);border-radius:14px;padding:22px 24px}
+.card+.card{margin-top:14px}
+.card-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--s400);margin-bottom:14px}
+
+/* checklist */
+.checklist{display:flex;flex-direction:column;gap:0}
+.cl-item{display:grid;grid-template-columns:32px 1fr auto;gap:12px;padding:13px 0;border-bottom:1px solid var(--s100);align-items:start}
+.cl-item:last-child{border-bottom:none}
+.cl-num{font-size:11px;font-weight:800;color:var(--s300);padding-top:1px}
+.cl-title{font-size:13px;font-weight:700;color:var(--s900);margin-bottom:2px}
+.cl-desc{font-size:12px;color:var(--s500);line-height:1.5}
+.cl-file{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--s100);border:1px solid var(--s200);color:var(--g600);padding:2px 8px;border-radius:4px;white-space:nowrap}
+.priority{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.p-critical{background:#FDF2F2;color:var(--cr)}
+.p-high{background:var(--a50);color:var(--a500)}
+.p-medium{background:var(--g50);color:var(--g600)}
+.p-low{background:var(--s100);color:var(--s500)}
+
+/* component map */
+.comp-map{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:900px){.comp-map{grid-template-columns:1fr 1fr}}
+.comp-card{background:var(--s50);border:1px solid var(--s200);border-radius:12px;padding:14px 16px}
+.comp-name{font-size:12px;font-weight:700;color:var(--s900);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.comp-path{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--s400);margin-bottom:8px}
+.comp-deps{display:flex;flex-wrap:wrap;gap:4px}
+.dep{font-size:10px;background:var(--g50);border:1px solid var(--g100);color:var(--g600);padding:1px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace}
+.dep-ext{background:var(--a50);border-color:var(--a100);color:var(--a500)}
+
+/* ethical checklist */
+.eth-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--s100);align-items:flex-start}
+.eth-item:last-child{border-bottom:none}
+.eth-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.eth-title{font-size:13px;font-weight:700;color:var(--s900);margin-bottom:3px}
+.eth-desc{font-size:12px;color:var(--s500);line-height:1.5}
+
+/* copy guide */
+.copy-row{padding:14px 0;border-bottom:1px solid var(--s100)}
+.copy-row:last-child{border-bottom:none}
+.copy-ctx{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--s400);margin-bottom:6px}
+.copy-do{background:var(--g50);border-left:3px solid var(--g500);border-radius:0 8px 8px 0;padding:10px 13px;font-size:12px;color:var(--g700);margin-bottom:5px;font-family:'Lora',Georgia,serif;font-style:italic}
+.copy-dont{background:#FDF2F2;border-left:3px solid var(--cr);border-radius:0 8px 8px 0;padding:10px 13px;font-size:12px;color:#7F1D1D;margin-bottom:5px;text-decoration:line-through;opacity:.7}
+.copy-rule{font-size:11px;color:var(--s500);margin-top:4px;line-height:1.5}
+
+/* grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.g2{grid-template-columns:1fr}}
+
+/* a11y */
+.a11y-row{display:grid;grid-template-columns:180px 1fr 1fr;gap:16px;padding:12px 0;border-bottom:1px solid var(--s100);font-size:12px}
+.a11y-row:last-child{border-bottom:none}
+.a11y-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--s400);padding:8px 0}
+
+/* badge */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
+.b-done{background:var(--g50);color:var(--g600)}
+.b-pending{background:var(--s100);color:var(--s500)}
+</style>
+</head>
+<body>
+
+<div class="dh">
+  <div class="in">
+    <div class="phase-tag">▸ Fase 4 · Bloco 4</div>
+    <h1>Pacote de Handoff</h1>
+    <p>Tokens · Checklist priorizado · Mapa de componentes · Guia de copy · Acessibilidade · Checklist ético</p>
+    <div class="meta">
+      <span>📁 4 blocos entregues</span>
+      <span>🖥 7 telas finais</span>
+      <span>⚡ 7 microinterações</span>
+      <span>🛡 5 tons do Sage</span>
+      <span>🔒 Pronto para Claude Code</span>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <div class="in">
+    <a href="#tokens">Tokens</a>
+    <a href="#checklist">Checklist</a>
+    <a href="#componentes">Componentes</a>
+    <a href="#copy">Copy</a>
+    <a href="#a11y">Acessibilidade</a>
+    <a href="#etica">Ética</a>
+  </div>
+</nav>
+
+<div class="page" id="root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+const T = {
+  s50:'#FAFAF8',s100:'#F4F2EE',s200:'#E6E2DB',s300:'#CEC9BF',
+  s400:'#A29D95',s500:'#756F66',s600:'#5A544C',s700:'#3A3731',
+  s800:'#282521',s900:'#1C1917',
+  g50:'#EEF5F1',g100:'#D4E9DE',g200:'#A9D3BF',
+  g400:'#5E9B84',g500:'#3D7A67',g600:'#2D6254',g700:'#1E4D41',
+  a50:'#FEF8EC',a100:'#FCEECE',a400:'#D4973E',a500:'#B87A28',
+  cr:'#C04A4A',crL:'#FDF2F2',crB:'#F5C6C6',
+};
+
+/* ── Section header ── */
+const SH = ({num, title, sub}) => (
+  <div style={{marginBottom:28}}>
+    <div className="sec-num">{num}</div>
+    <div className="sec-title">{title}</div>
+    {sub && <div className="sec-sub">{sub}</div>}
+  </div>
+);
+
+/* ══════════════════════════════════════════════════
+   TOKENS
+══════════════════════════════════════════════════ */
+const Tokens = () => (
+  <div id="tokens" className="sec">
+    <SH num="4.1 — Design Tokens" title="tailwind.config.js + mood scale atualizada"
+      sub="Versão final dos tokens incorporando todas as decisões da Fase 4. Pronto para colar no projeto." />
+
+    <div className="code">{`/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [`}<span className="cs">{"\"./app/**/*.{js,jsx,ts,tsx}\", \"./src/**/*.{js,jsx,ts,tsx}\""}</span>{`],
+  presets: [`}<span className="ck">require</span>(<span className="cs">"nativewind/preset"</span>){`],
+  darkMode: `}<span className="cs">'class'</span>{`,
+  theme: {
+    extend: {
+      colors: {
+
+        `}<span className="cg">// ── Stone — base neutra quente ──</span>{`
+        stone: {
+          `}<span className="cn">50</span>{`:  `}<span className="cs">'#FAFAF8'</span>{`,  `}<span className="cg">// bg de todas as telas</span>{`
+          `}<span className="cn">100</span>{`: `}<span className="cs">'#F4F2EE'</span>{`,  `}<span className="cg">// surface alternativo, input bg</span>{`
+          `}<span className="cn">200</span>{`: `}<span className="cs">'#E6E2DB'</span>{`,  `}<span className="cg">// borders padrão</span>{`
+          `}<span className="cn">300</span>{`: `}<span className="cs">'#CEC9BF'</span>{`,  `}<span className="cg">// dividers, borders desabilitados</span>{`
+          `}<span className="cn">400</span>{`: `}<span className="cs">'#A29D95'</span>{`,  `}<span className="cg">// placeholder, text-tertiary</span>{`
+          `}<span className="cn">500</span>{`: `}<span className="cs">'#756F66'</span>{`,  `}<span className="cg">// text-secondary, labels</span>{`
+          `}<span className="cn">600</span>{`: `}<span className="cs">'#5A544C'</span>{`,  `}<span className="cg">// text-medium</span>{`
+          `}<span className="cn">700</span>{`: `}<span className="cs">'#3A3731'</span>{`,  `}<span className="cg">// text-strong</span>{`
+          `}<span className="cn">800</span>{`: `}<span className="cs">'#282521'</span>{`,  `}<span className="cg">// text-dark</span>{`
+          `}<span className="cn">900</span>{`: `}<span className="cs">'#1C1917'</span>{`,  `}<span className="cg">// text-primary, headings</span>{`
+        },
+
+        `}<span className="cg">// ── Sage — único accent de marca ──</span>{`
+        sage: {
+          `}<span className="cn">50</span>{`:  `}<span className="cs">'#EEF5F1'</span>{`,  `}<span className="cg">// bg ativos, XPBar track</span>{`
+          `}<span className="cn">100</span>{`: `}<span className="cs">'#D4E9DE'</span>{`,  `}<span className="cg">// hover, avatar bg do Sage</span>{`
+          `}<span className="cn">200</span>{`: `}<span className="cs">'#A9D3BF'</span>{`,  `}<span className="cg">// borders ativos</span>{`
+          `}<span className="cn">400</span>{`: `}<span className="cs">'#5E9B84'</span>{`,  `}<span className="cg">// dark mode accent, humor nível 4</span>{`
+          `}<span className="cn">500</span>{`: `}<span className="cs">'#3D7A67'</span>{`,  `}<span className="cg">// PRIMARY — CTAs, tab ativo, ícones</span>{`
+          `}<span className="cn">600</span>{`: `}<span className="cs">'#2D6254'</span>{`,  `}<span className="cg">// pressed state</span>{`
+          `}<span className="cn">700</span>{`: `}<span className="cs">'#1E4D41'</span>{`,  `}<span className="cg">// text em bg sage</span>{`
+        },
+
+        `}<span className="cg">// ── XP — âmbar para celebração ──</span>{`
+        xp: {
+          light:  `}<span className="cs">'#FEF8EC'</span>{`,
+          border: `}<span className="cs">'#FCEECE'</span>{`,
+          main:   `}<span className="cs">'#D4973E'</span>{`,  `}<span className="cg">// XP toast, badges desbloqueados</span>{`
+          dark:   `}<span className="cs">'#B87A28'</span>{`,
+        },
+
+        `}<span className="cg">// ── Crisis — coral quente, não vermelho ──</span>{`
+        crisis: {
+          light:  `}<span className="cs">'#FDF2F2'</span>{`,
+          border: `}<span className="cs">'#F5C6C6'</span>{`,
+          main:   `}<span className="cs">'#C04A4A'</span>{`,  `}<span className="cg">// CVV button, CrisisModal CTA apenas</span>{`
+          dark:   `}<span className="cs">'#9B2424'</span>{`,
+        },
+
+        `}<span className="cg">// ── Mood scale (Jonauskaite 2020) ──</span>{`
+        mood: {
+          `}<span className="cn">1</span>{`:  `}<span className="cs">'#3B6FAB'</span>{`,  `}<span className="cg">// muito mal — azul profundo</span>{`
+          `}<span className="cn">2</span>{`:  `}<span className="cs">'#6B8FAB'</span>{`,  `}<span className="cg">// mal — azul-acinzentado</span>{`
+          `}<span className="cn">3</span>{`:  `}<span className="cs">'#888787'</span>{`,  `}<span className="cg">// neutro — cinza sem conotação</span>{`
+          `}<span className="cn">4</span>{`:  `}<span className="cs">'#5E9B84'</span>{`,  `}<span className="cg">// bem — sage (identidade)</span>{`
+          `}<span className="cn">5</span>{`:  `}<span className="cs">'#C9963A'</span>{`,  `}<span className="cg">// ótimo — dourado, flourishing</span>{`
+        },
+
+        `}<span className="cg">// ── Dark mode surfaces ──</span>{`
+        dark: {
+          bg:     `}<span className="cs">'#131210'</span>{`,
+          surf:   `}<span className="cs">'#1D1B17'</span>{`,
+          border: `}<span className="cs">'#2C2922'</span>{`,
+        },
+      },
+
+      fontFamily: {
+        sans: [`}<span className="cs">'Inter'</span>{`, `}<span className="cs">'system-ui'</span>{`],
+        sage: [`}<span className="cs">'Lora'</span>{`, `}<span className="cs">'Georgia'</span>{`, `}<span className="cs">'serif'</span>{`],  `}<span className="cg">// APENAS para mensagens do Sage</span>{`
+      },
+
+      fontSize: {
+        caption:    [`}<span className="cs">'11px'</span>{`, `}<span className="co">{"{ lineHeight: '16px', fontWeight: '500' }"}</span>{`],
+        small:      [`}<span className="cs">'13px'</span>{`, `}<span className="co">{"{ lineHeight: '20px' }"}</span>{`],
+        body:       [`}<span className="cs">'15px'</span>{`, `}<span className="co">{"{ lineHeight: '24px' }"}</span>{`],
+        'title-sm': [`}<span className="cs">'17px'</span>{`, `}<span className="co">{"{ lineHeight: '26px', fontWeight: '700' }"}</span>{`],
+        title:      [`}<span className="cs">'20px'</span>{`, `}<span className="co">{"{ lineHeight: '28px', fontWeight: '800' }"}</span>{`],
+        display:    [`}<span className="cs">'24px'</span>{`, `}<span className="co">{"{ lineHeight: '32px', fontWeight: '800', letterSpacing: '-0.01em' }"}</span>{`],
+      },
+
+      spacing: {
+        `}<span className="cn">1</span>{`: `}<span className="cs">'4px'</span>{`, `}<span className="cn">2</span>{`: `}<span className="cs">'8px'</span>{`, `}<span className="cn">3</span>{`: `}<span className="cs">'12px'</span>{`, `}<span className="cn">4</span>{`: `}<span className="cs">'16px'</span>{`,
+        `}<span className="cn">5</span>{`: `}<span className="cs">'20px'</span>{`, `}<span className="cn">6</span>{`: `}<span className="cs">'24px'</span>{`, `}<span className="cn">8</span>{`: `}<span className="cs">'32px'</span>{`, `}<span className="cn">12</span>{`: `}<span className="cs">'48px'</span>{`,
+      },
+
+      borderRadius: {
+        sm:   `}<span className="cs">'6px'</span>{`,   `}<span className="cg">// tags, badges, chips</span>{`
+        md:   `}<span className="cs">'12px'</span>{`,  `}<span className="cg">// inputs, botões, cards menores</span>{`
+        lg:   `}<span className="cs">'20px'</span>{`,  `}<span className="cg">// cards principais, modais</span>{`
+        pill: `}<span className="cs">'999px'</span>{`, `}<span className="cg">// avatars, XPBar, botão enviar</span>{`
+      },
+    },
+  },
+  plugins: [],
+};`}
+    </div>
+  </div>
+);
+
+/* ══════════════════════════════════════════════════
+   CHECKLIST
+══════════════════════════════════════════════════ */
+const Checklist = () => {
+  const [done, setDone] = useState({});
+  const toggle = (id) => setDone(d => ({...d, [id]: !d[id]}));
+
+  const items = [
+    {
+      id:'c1', priority:'critical', title:'Remover afirmação falsa de privacidade no login',
+      desc:'Substituir "Seus dados ficam apenas no seu dispositivo" por "Protegido com criptografia Supabase".',
+      file:'login.jsx', phase:'Fase 2 — identificado'
+    },
+    {
+      id:'c2', priority:'critical', title:'Migrar purple-* → sage-* em todo o codebase',
+      desc:'Busca global: purple- → substitui por sage- ou stone-. Verificar especialmente ChatBubble, TabBar, XPBar.',
+      file:'global', phase:'Fase 3 — tokens definidos'
+    },
+    {
+      id:'c3', priority:'critical', title:'BadgeCard — remover className dinâmico',
+      desc:'Substituir badge.color dinâmico por mapa estático: unlocked-sage, unlocked-amber, locked. Resolve bug de build NativeWind.',
+      file:'BadgeCard.tsx', phase:'Fase 2 — bug crítico'
+    },
+    {
+      id:'c4', priority:'critical', title:'CVV 188 — garantir visibilidade em todos os estados do Chat',
+      desc:'O botão 188 não pode desaparecer em scroll, loading, erro ou encerramento. Posição fixed no header.',
+      file:'ChatScreen.tsx', phase:'Fase 4 — Bloco 2'
+    },
+    {
+      id:'c5', priority:'high', title:'Implementar CrisisModal com 3 momentos',
+      desc:'Detecção via Gemini → mensagem âncora hardcoded → modal com acknowledgment obrigatório → pós-confirmação. Sem botão X.',
+      file:'CrisisModal.tsx', phase:'Fase 4 — Bloco 2'
+    },
+    {
+      id:'c6', priority:'high', title:'Implementar pré-tela de humor antes do Chat',
+      desc:'MoodSelector com 5 opções, escala Jonauskaite 2020. Mood salvo no contexto da sessão para o Sage.',
+      file:'PreChatScreen.tsx', phase:'Fase 4 — Bloco 1'
+    },
+    {
+      id:'c7', priority:'high', title:'Lora Italic para mensagens do Sage',
+      desc:'Instalar expo-font com Lora_400Italic. Aplicar APENAS em ChatMessage quando role === "sage".',
+      file:'ChatMessage.tsx', phase:'Fase 3 — tipografia'
+    },
+    {
+      id:'c8', priority:'high', title:'Tab bar — dot indicator + ícones SVG + safe area',
+      desc:'Substituir emoji por Lucide SVG. Dot indicator no top border do tab ativo. useSafeAreaInsets para paddingBottom.',
+      file:'_layout.tsx', phase:'Fase 3 — componentes'
+    },
+    {
+      id:'c9', priority:'high', title:'Onboarding — 4 slides com flag AsyncStorage',
+      desc:'Slide 4 dark bg com CTA duplo (criar conta / explorar sem conta). Flag onboardingDone para skip no reopen.',
+      file:'OnboardingScreen.tsx', phase:'Fase 4 — Bloco 1'
+    },
+    {
+      id:'c10', priority:'high', title:'XP Toast — animação de entrada/saída',
+      desc:'Spring 320ms de entrada, visível 2s, ease-in 240ms de saída. Haptic LIGHT no aparecimento.',
+      file:'XPToast.tsx', phase:'Fase 4 — Bloco 3'
+    },
+    {
+      id:'c11', priority:'medium', title:'Ciclo de respiração 4-7-8 com animação',
+      desc:'Círculo escala 1.0→1.6 em 4s (inspire), ringPulse em 7s (hold), 1.6→1.0 em 8s (exhale). 3 ciclos = prática completa.',
+      file:'BreathingPractice.tsx', phase:'Fase 4 — Bloco 3'
+    },
+    {
+      id:'c12', priority:'medium', title:'Diário — flag hasOpenedDiary + empty states',
+      desc:'1ª abertura: prompt suave com Lora italic. 2ª+: empty state limpo. Swipe left em entry para delete com confirmação.',
+      file:'DiaryScreen.tsx', phase:'Fase 4 — Bloco 2'
+    },
+    {
+      id:'c13', priority:'medium', title:'Streak — linguagem sem culpa + protetor semanal',
+      desc:'"Você voltou" nunca "você perdeu". Protetor de streak 1×/semana silencioso. Streak pop com spring + rotação.',
+      file:'StreakService.ts', phase:'Fase 4 — Blocos 1+3'
+    },
+    {
+      id:'c14', priority:'medium', title:'Dashboard — skeleton loading + estado offline',
+      desc:'Skeleton em stone-200/100 com shimmer. Banner âmbar offline. XP/streak em AsyncStorage para fallback.',
+      file:'DashboardScreen.tsx', phase:'Fase 4 — Bloco 2'
+    },
+    {
+      id:'c15', priority:'medium', title:'5 tons do Sage via system prompt injetado',
+      desc:'Acolhedor / Reflexivo / Sugestivo / Âncora (hardcoded) / Retomada. Temperatura Gemini variável por tom.',
+      file:'SageService.ts', phase:'Fase 4 — Bloco 2'
+    },
+    {
+      id:'c16', priority:'medium', title:'Mood mini-chart com escala de cores Jonauskaite',
+      desc:'Azul profundo (#3B6FAB) para 1, ..., dourado (#C9963A) para 5. Mesma escala em MoodSelector e DiaryChart.',
+      file:'MoodChart.tsx', phase:'Fase 4 — Blocos 1+3'
+    },
+    {
+      id:'c17', priority:'low', title:'Dark mode — tema completo',
+      desc:'dark-bg #131210, dark-surf #1D1B17, dark-border #2C2922. Sage accent mantém mesmo valor no dark.',
+      file:'theme.ts', phase:'Fase 3 — sistema'
+    },
+    {
+      id:'c18', priority:'low', title:'XP Bar — animação fill com Reanimated',
+      desc:'withTiming 700ms material-ease. useDerivedValue para % e contador simultâneos. Level-up: completa até 100% antes de navegar.',
+      file:'XPBar.tsx', phase:'Fase 4 — Bloco 3'
+    },
+    {
+      id:'c19', priority:'low', title:'Typing indicator com Reanimated',
+      desc:'3 SharedValues com withRepeat. Delays 0/160/320ms. entering/exiting com FadeInUp/FadeOutUp.',
+      file:'TypingIndicator.tsx', phase:'Fase 4 — Bloco 3'
+    },
+    {
+      id:'c20', priority:'low', title:'Datas do diário: formato contextual',
+      desc:'"Hoje" / "Ontem" para os 2 últimos dias. "DD/MM" para anteriores. Hora sempre no formato HH:MM.',
+      file:'DiaryEntry.tsx', phase:'Fase 4 — iteração'
+    },
+  ];
+
+  const priorities = [
+    {id:'critical', label:'Crítico', cls:'p-critical', desc:'Bug ou risco ético — implementar antes de qualquer release'},
+    {id:'high',     label:'Alto',    cls:'p-high',     desc:'Funcionalidade central da proposta de valor'},
+    {id:'medium',   label:'Médio',   cls:'p-medium',   desc:'Qualidade de experiência — não bloqueia MVP'},
+    {id:'low',      label:'Baixo',   cls:'p-low',      desc:'Polish e otimização'},
+  ];
+
+  const completed = Object.values(done).filter(Boolean).length;
+
+  return (
+    <div id="checklist" className="sec">
+      <SH num="4.2 — Checklist de Implementação" title="20 itens priorizados"
+        sub="Ordenado por impacto. Itens críticos bloqueiam qualquer release ético do app." />
+
+      {/* Progress */}
+      <div style={{background:'#fff',border:('1px solid ' + T.s200),borderRadius:12,padding:'16px 20px',marginBottom:24,display:'flex',alignItems:'center',gap:20}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.s900,marginBottom:8}}>Progresso — {completed} de {items.length} itens marcados</div>
+          <div style={{height:6,background:T.g50,borderRadius:99,overflow:'hidden'}}>
+            <div style={{height:'100%',width:(completed/items.length*100) + '%',background:T.g500,borderRadius:99,transition:'width .3s'}}/>
+          </div>
+        </div>
+        <div style={{fontSize:22,fontWeight:800,color:T.g500}}>{Math.round(completed/items.length*100)}%</div>
+      </div>
+
+      {/* Legend */}
+      <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:20}}>
+        {priorities.map(p=>(
+          <div key={p.id} style={{display:'flex',alignItems:'center',gap:6,background:'#fff',border:('1px solid ' + T.s200),borderRadius:8,padding:'6px 12px'}}>
+            <span className={'priority ' + p.cls}>{p.label}</span>
+            <span style={{fontSize:11,color:T.s500}}>{p.desc}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Items */}
+      <div className="card" style={{padding:'0 24px'}}>
+        <div className="checklist">
+          {items.map((item,i) => (
+            <div key={item.id} className="cl-item" style={{opacity: done[item.id] ? .45 : 1, cursor:'pointer'}} onClick={() => toggle(item.id)}>
+              <div className="cl-num">
+                <div style={{
+                  width:22,height:22,borderRadius:6,
+                  border:('1.5px solid ' + (done[item.id] ? T.g500 : T.s300)),
+                  background: done[item.id] ? T.g500 : 'transparent',
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  transition:'all .15s',
+                }}>
+                  {done[item.id] && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>}
+                </div>
+              </div>
+              <div>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3,flexWrap:'wrap'}}>
+                  <span className={'priority ' + {critical:'p-critical',high:'p-high',medium:'p-medium',low:'p-low'}[item.priority]}>{item.priority === 'critical' ? 'Crítico' : item.priority === 'high' ? 'Alto' : item.priority === 'medium' ? 'Médio' : 'Baixo'}</span>
+                  <span className="cl-title" style={{margin:0}}>{item.title}</span>
+                </div>
+                <div className="cl-desc">{item.desc}</div>
+                <div style={{fontSize:10,color:T.s400,marginTop:4}}>{item.phase}</div>
+              </div>
+              <div style={{paddingTop:2}}>
+                <span className="cl-file">{item.file}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════
+   COMPONENT MAP
+══════════════════════════════════════════════════ */
+const ComponentMap = () => {
+  const comps = [
+    { name:'XPBar', path:'components/XPBar.tsx', deps:['Reanimated','AsyncStorage'], desc:'Level, XP fill, percentagem. Não usa useState para a barra.' },
+    { name:'ChatMessage', path:'components/ChatMessage.tsx', deps:['Lora font'], desc:'Lora italic para sage, Inter para user. Props: role, text, timestamp.' },
+    { name:'CrisisModal', path:'components/CrisisModal.tsx', deps:['Reanimated','Haptics'], desc:'Bottom sheet. Sem botão X. Acknowledgment obrigatório. CVV é Linking.openURL.' },
+    { name:'MoodSelector', path:'components/MoodSelector.tsx', deps:['Reanimated','Haptics'], desc:'5 opções. Escala Jonauskaite. Props: onSelect(mood: 1-5).' },
+    { name:'BadgeCard', path:'components/BadgeCard.tsx', deps:[], desc:'Variantes: unlocked-sage, unlocked-amber, locked. Sem className dinâmico.' },
+    { name:'TabBar', path:'components/TabBar.tsx', deps:['SafeAreaContext'], desc:'Dot indicator, Lucide SVG, insets.bottom para safe area.' },
+    { name:'XPToast', path:'components/XPToast.tsx', deps:['Reanimated','Haptics'], desc:'Spring entry, visible 2s, ease-in exit. Não bloqueia interação.' },
+    { name:'BreathingCircle', path:'components/BreathingCircle.tsx', deps:['Reanimated','Haptics'], desc:'3 fases: 4s/7s/8s. 3 ciclos por sessão. Controle manual — sem Animated.loop.' },
+    { name:'TypingIndicator', path:'components/TypingIndicator.tsx', deps:['Reanimated'], desc:'3 dots com delays 0/160/320ms. FadeInUp/FadeOutUp no container.' },
+    { name:'MoodChart', path:'components/MoodChart.tsx', deps:[], desc:'Barras coloridas por mood level. Escala Jonauskaite. Props: data: number[].' },
+    { name:'SkeletonCard', path:'components/SkeletonCard.tsx', deps:['Reanimated'], desc:'Shimmer genérico. Props: width, height, borderRadius. Usado em todos os loadings.' },
+    { name:'CVVButton', path:'components/CVVButton.tsx', deps:['Linking'], desc:'Sempre visível no header do chat. Tap abre tel:188. Nunca remover.' },
+    { name:'DiaryEntry', path:'components/DiaryEntry.tsx', deps:[], desc:'Data contextual: hoje/ontem/DD-MM. Swipe-left delete com confirmação.' },
+    { name:'StreakCard', path:'components/StreakCard.tsx', deps:['Reanimated','Haptics'], desc:'Spring pop no primeiro acesso do dia. Copy sempre positivo.' },
+    { name:'SageAvatar', path:'components/SageAvatar.tsx', deps:[], desc:'SVG circular. Verde sage. Não usar emoji. Usado em bubbles e header.' },
+  ];
+
+  return (
+    <div id="componentes" className="sec">
+      <SH num="4.3 — Mapa de Componentes" title="15 componentes novos / modificados"
+        sub="Cada componente com caminho, dependências externas e nota de implementação." />
+      <div className="comp-map">
+        {comps.map(c => (
+          <div key={c.name} className="comp-card">
+            <div className="comp-name">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={T.g500} strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+              {c.name}
+            </div>
+            <div className="comp-path">{c.path}</div>
+            <div style={{fontSize:11,color:T.s500,marginBottom:8,lineHeight:1.4}}>{c.desc}</div>
+            <div className="comp-deps">
+              {c.deps.map(d => <span key={d} className="dep dep-ext">{d}</span>)}
+              {c.deps.length === 0 && <span className="dep" style={{background:T.s100,borderColor:T.s200,color:T.s500}}>sem deps externas</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════
+   COPY GUIDE
+══════════════════════════════════════════════════ */
+const CopyGuide = () => {
+  const rows = [
+    {
+      ctx:'Empty state — Dashboard',
+      do:'"Comece uma conversa com o Sage — leva menos de 2 minutos."',
+      dont:'"Nenhuma atividade ainda. Comece agora!"',
+      rule:'Sem ponto de exclamação. Sem imperativo. O usuário não deve sentir pressão.',
+    },
+    {
+      ctx:'Streak perdida',
+      do:'"Você voltou — recomeçar é sempre válido."',
+      dont:'"Sua sequência de 7 dias foi perdida."',
+      rule:'Nunca mencionar o número perdido. Nunca usar o verbo "perder". Foco no presente, não na perda.',
+    },
+    {
+      ctx:'CrisisModal — corpo',
+      do:'"Pessoas treinadas estão prontas para ouvir — agora, de graça, sem precisar se explicar."',
+      dont:'"Você pode estar em crise. Ligue para o CVV."',
+      rule:'Sem diagnóstico. Sem "crise". Ênfase na presença de alguém real, não no problema do usuário.',
+    },
+    {
+      ctx:'Onboarding — slide 4 (promessa)',
+      do:'"Você não precisa estar bem para começar."',
+      dont:'"Melhore sua saúde mental em 5 minutos por dia!"',
+      rule:'Não prometer resultado. Não usar métrica de tempo. A promessa é de presença, não de cura.',
+    },
+    {
+      ctx:'Prática bloqueada',
+      do:'"Disponível no nível 4" (tooltip sutil)',
+      dont:'"Desbloqueie esta prática atingindo o nível 4!"',
+      rule:'Sem exclamação. Sem linguagem de gamificação agressiva. Informativo, não motivacional.',
+    },
+    {
+      ctx:'Estado offline',
+      do:'"Sem conexão — mostrando dados salvos localmente."',
+      dont:'"Erro de conexão. Tente novamente."',
+      rule:'Nunca "erro" para algo que não é culpa do usuário. Sempre explica o que ainda funciona.',
+    },
+    {
+      ctx:'Sage — após silêncio do usuário',
+      do:'"Estou aqui. Não precisamos ir a lugar nenhum."',
+      dont:'"Você ainda está aí? Precisa de ajuda?"',
+      rule:'Silêncio é uma resposta válida. Nunca criar urgência. O Sage espera.',
+    },
+    {
+      ctx:'XP conquistado',
+      do:'+20 XP (toast discreto, sem copy adicional)',
+      dont:'"Parabéns! Você ganhou 20 XP! Continue assim!"',
+      rule:'XP é sussurro, não grito. O toast fala por si. Copy adicional é redundante e infantilizante.',
+    },
+  ];
+
+  return (
+    <div id="copy" className="sec">
+      <SH num="4.4 — Guia de Copy" title="Princípios de escrita por contexto"
+        sub="Cada contexto tem um exemplo correto (em Lora italic) e um incorreto. O padrão: presença antes de resultado, nunca punição, nunca urgência artificial." />
+      <div className="card" style={{padding:'0 24px'}}>
+        {rows.map((r,i) => (
+          <div key={i} className="copy-row">
+            <div className="copy-ctx">{r.ctx}</div>
+            <div className="copy-do">{r.do}</div>
+            <div className="copy-dont">{r.dont}</div>
+            <div className="copy-rule">{r.rule}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════
+   ACESSIBILIDADE
+══════════════════════════════════════════════════ */
+const A11y = () => {
+  const items = [
+    { comp:'Todos os ícones SVG', req:'accessibilityLabel obrigatório', impl:'accessibilityLabel="Ícone de [nome]" accessibilityRole="image"', status:'pending' },
+    { comp:'CVVButton', req:'accessibilityLabel explícito + role=button', impl:'accessibilityLabel="Ligar para o CVV - 188" accessibilityRole="button" accessibilityHint="Abre chamada telefônica"', status:'pending' },
+    { comp:'CrisisModal checkbox', req:'accessibilityRole=checkbox + state', impl:'accessibilityRole="checkbox" accessibilityState={{ checked: isChecked }}', status:'pending' },
+    { comp:'MoodSelector', req:'Cada opção com label descritivo', impl:'accessibilityLabel="Humor: Muito mal" accessibilityRole="radio"', status:'pending' },
+    { comp:'XPBar', req:'accessibilityValue para leitores de tela', impl:'accessibilityRole="progressbar" accessibilityValue={{ min:0, max:100, now:62, text:"62% para o próximo nível" }}', status:'pending' },
+    { comp:'ChatMessage (Sage)', req:'Indicar que é mensagem da IA', impl:'accessibilityLabel="Sage: " + message.text', status:'pending' },
+    { comp:'BreathingCircle', req:'Anunciar fase em andamento', impl:'accessibilityLiveRegion="polite" para mudança de fase', status:'pending' },
+    { comp:'BadgeCard locked', req:'Não criar frustração desnecessária', impl:'accessibilityLabel=badge.name + " ainda não conquistado" accessibilityHint="" (sem hint de como desbloquear)', status:'pending' },
+    { comp:'Cores de humor', req:'Não depender só de cor', impl:'Emoji + label sempre visível. Gráfico com tooltip de valor numérico no tap.', status:'pending' },
+    { comp:'Tab bar', req:'Tab ativo anunciado', impl:'accessibilityState={{ selected: isActive }} em cada tab', status:'pending' },
+  ];
+
+  return (
+    <div id="a11y" className="sec">
+      <SH num="4.5 — Acessibilidade" title="10 requisitos de acessibilidade"
+        sub="React Native usa a API de acessibilidade nativa (iOS VoiceOver, Android TalkBack). Todos os itens devem ser implementados antes do release." />
+      <div className="card" style={{padding:'0 24px'}}>
+        <div style={{display:'grid',gridTemplateColumns:'160px 1fr 1fr',gap:16}} className="a11y-head">
+          <div>Componente</div>
+          <div>Requisito</div>
+          <div>Implementação</div>
+        </div>
+        {items.map((it,i) => (
+          <div key={i} className="a11y-row">
+            <div style={{fontWeight:700,color:T.s900}}>{it.comp}</div>
+            <div style={{color:T.s600}}>{it.req}</div>
+            <div style={{fontFamily:'monospace',fontSize:10,color:T.g600,background:T.g50,padding:'6px 9px',borderRadius:6,lineHeight:1.5}}>{it.impl}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════
+   ÉTICA
+══════════════════════════════════════════════════ */
+const Ethics = () => {
+  const items = [
+    {
+      icon: T.cr, iconBg: '#FDF2F2',
+      svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C04A4A" strokeWidth="1.8" strokeLinecap="round"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>,
+      title: 'CVV 188 — não negociável',
+      desc: 'Visível em TODAS as telas de interação. Nunca colapsa em scroll. Nunca some em loading. Nunca em amarelo de alerta — coral discreto no header. O botão 188 é o único elemento imune a decisões de produto.'
+    },
+    {
+      icon: T.g500, iconBg: T.g50,
+      svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T.g500} strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>,
+      title: 'CrisisModal — sem bypass',
+      desc: 'Sem botão X. Sem swipe para fechar. O acknowledgment é obrigatório — não por design autoritário, mas porque o usuário precisa sair do modal sabendo que o CVV existe e é gratuito. A mensagem âncora é hardcoded, nunca gerada por IA.'
+    },
+    {
+      icon: T.a400, iconBg: T.a50,
+      svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T.a400} strokeWidth="1.8" strokeLinecap="round"><path d="M12 2c0 6-6 7-6 13a6 6 0 0012 0c0-6-6-7-6-13z"/><path d="M12 12c0 3-2 4-2 6a2 2 0 004 0c0-2-2-3-2-6z"/></svg>,
+      title: 'Streak — sem punição',
+      desc: 'Streak quebrada nunca aparece em vermelho. Copy foca no retorno, não na perda. Protetor de streak (1×/semana) é silencioso — sem notificação, sem UI especial. O app não deve criar ansiedade de manutenção de streak em usuários com saúde mental fragilizada.'
+    },
+    {
+      icon: T.g600, iconBg: T.g50,
+      svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T.g600} strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>,
+      title: 'Privacidade — sem afirmação falsa',
+      desc: 'Remover "Seus dados ficam apenas no seu dispositivo" do login. Substituir por "Protegido com criptografia Supabase". Honestidade sobre onde os dados ficam é pré-requisito ético — especialmente em um app de saúde mental.'
+    },
+    {
+      icon: '#3B6FAB', iconBg: '#EEF3FA',
+      svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B6FAB" strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+      title: 'Humor — sem julgamento de cor',
+      desc: 'Nenhum estado de humor usa vermelho. Azul profundo para tristeza (Jonauskaite 2020) — não é alarme, é representação. O gráfico nunca destaca negativamente os dias difíceis. Sentir-se mal não é um erro do usuário.'
+    },
+    {
+      icon: T.g500, iconBg: T.g50,
+      svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T.g500} strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4"/><path d="M12 12v4"/></svg>,
+      title: 'Sage — não é terapeuta',
+      desc: 'O Sage nunca faz diagnóstico. Nunca usa "você está deprimido/ansioso". Nunca diz "eu entendo" — em vez disso, "faz sentido". Em situações de crise, o Sage não tenta resolver — ele ancora e passa para o CVV. O limite da IA é explícito na UI.'
+    },
+    {
+      icon: T.s600, iconBg: T.s100,
+      svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={T.s600} strokeWidth="1.8" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+      title: 'Dados de saúde mental — sensibilidade máxima',
+      desc: 'Entradas do diário e transcrições de chat são os dados mais sensíveis do app. Criptografia em trânsito e em repouso. Nunca usados para treinamento de modelo sem consentimento explícito. Política de retenção máxima de 2 anos com opção de exclusão total.'
+    },
+  ];
+
+  return (
+    <div id="etica" className="sec">
+      <SH num="4.6 — Checklist Ético" title="7 princípios não-negociáveis"
+        sub="Estes itens não são features — são pré-requisitos éticos para um app de saúde mental universitária. Nenhum deles pode ser removido por decisão de produto." />
+      <div className="card" style={{padding:'6px 24px'}}>
+        {items.map((it,i) => (
+          <div key={i} className="eth-item">
+            <div className="eth-icon" style={{background:it.iconBg}}>{it.svg}</div>
+            <div>
+              <div className="eth-title">{it.title}</div>
+              <div className="eth-desc">{it.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Final stamp */}
+      <div style={{background:T.s900,borderRadius:16,padding:'28px 32px',marginTop:28,display:'flex',gap:20,alignItems:'flex-start'}}>
+        <div style={{width:44,height:44,borderRadius:13,background:T.g700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={T.g100} strokeWidth="1.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div>
+          <div style={{fontSize:15,fontWeight:800,color:'#fff',marginBottom:6}}>Fase 4 completa — pronto para Claude Code</div>
+          <div style={{fontFamily:"'Lora',Georgia,serif",fontStyle:'italic',fontSize:13,color:T.s400,lineHeight:1.7,marginBottom:14}}>
+            Quatro blocos. Sete telas finais. Sete microinterações com timing. Cinco tons do Sage. Vinte itens de checklist. Sete princípios éticos. Um sistema de design coerente do token à tela.
+          </div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            {['Bloco 1 — 7 telas','Bloco 2 — Estados + CrisisModal','Bloco 3 — Microinterações','Bloco 4 — Handoff'].map(b=>(
+              <span key={b} style={{fontSize:11,fontWeight:600,color:T.g400,background:'rgba(61,122,103,.15)',padding:'4px 12px',borderRadius:99}}>{b}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <div>
+      <Tokens />
+      <Checklist />
+      <ComponentMap />
+      <CopyGuide />
+      <A11y />
+      <Ethics />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

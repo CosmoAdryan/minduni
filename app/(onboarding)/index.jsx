@@ -9,35 +9,35 @@ const { width } = Dimensions.get('window');
 const SLIDES = [
   {
     Icon: Brain,
-    color: '#8B5CF6',
-    bg: '#EDE9FE',
-    title: 'Bem-vindo ao MindUni',
+    color: '#3D7A67',
+    bg: '#D4E9DE',
+    title: 'Você não precisa estar bem para começar',
     description:
-      'Sua jornada de bem-estar mental começa aqui. Um espaço seguro, gratuito e sem julgamentos para cuidar da sua saúde emocional.',
+      'O MindUni é um espaço seguro e sem julgamentos para cuidar da sua saúde emocional — no seu tempo, do seu jeito.',
   },
   {
     Icon: MessageCircle,
-    color: '#3B82F6',
-    bg: '#EFF6FF',
+    color: '#3D7A67',
+    bg: '#D4E9DE',
     title: 'Converse com o Sage',
     description:
-      'O Sage é seu companheiro digital baseado em Terapia Cognitivo-Comportamental (TCC). Ele te ouve e oferece apoio sempre que precisar.',
+      'O Sage te ouve com atenção e sem pressa. Ele não substitui um profissional — caminha ao seu lado, sempre que você precisar.',
   },
   {
     Icon: Target,
-    color: '#10B981',
-    bg: '#D1FAE5',
-    title: 'Desafios que cuidam de você',
+    color: '#3D7A67',
+    bg: '#D4E9DE',
+    title: 'Práticas que cuidam de você',
     description:
-      'Mindfulness, gratidão e respiração. Complete desafios diários, ganhe XP e evolua enquanto cuida da sua mente.',
+      'Mindfulness, gratidão e respiração. Pequenos passos no seu ritmo, sem cobrança — e que ainda rendem XP pelo caminho.',
   },
   {
     Icon: Shield,
-    color: '#F59E0B',
-    bg: '#FEF3C7',
+    color: '#D4973E',
+    bg: '#FEF8EC',
     title: 'Apoio, não substituição',
     description:
-      'O MindUni é um suporte complementar. Em momentos de crise, sempre procure um profissional ou ligue para o CVV: 188 (gratuito, 24h).',
+      'O MindUni é um suporte complementar. Em momentos de crise, procure um profissional ou ligue para o CVV: 188 — gratuito, 24h.',
   },
 ];
 
@@ -68,7 +68,7 @@ export default function Onboarding() {
           accessibilityLabel="Pular apresentação"
           accessibilityRole="button"
         >
-          <Text style={{ color: '#9CA3AF', fontWeight: '600', fontSize: 14 }}>Pular</Text>
+          <Text style={{ color: '#A29D95', fontWeight: '600', fontSize: 14 }}>Pular</Text>
         </TouchableOpacity>
       )}
       {isLast && <View style={{ height: 48 }} />}
@@ -99,10 +99,10 @@ export default function Onboarding() {
               >
                 <Icon size={48} color={slide.color} />
               </View>
-              <Text style={{ fontSize: 24, fontWeight: '700', color: '#1F2937', textAlign: 'center', marginBottom: 16 }}>
+              <Text style={{ fontSize: 24, fontWeight: '700', color: '#1C1917', textAlign: 'center', marginBottom: 16 }}>
                 {slide.title}
               </Text>
-              <Text style={{ fontSize: 15, color: '#6B7280', textAlign: 'center', lineHeight: 24 }}>
+              <Text style={{ fontSize: 15, color: '#756F66', textAlign: 'center', lineHeight: 24 }}>
                 {slide.description}
               </Text>
             </View>
@@ -120,7 +120,7 @@ export default function Onboarding() {
               borderRadius: 4,
               height: 8,
               width: i === current ? 24 : 8,
-              backgroundColor: i === current ? '#8B5CF6' : '#E5E7EB',
+              backgroundColor: i === current ? '#3D7A67' : '#E6E2DB',
             }}
           />
         ))}
@@ -130,16 +130,16 @@ export default function Onboarding() {
       <View style={{ flexDirection: 'row', paddingHorizontal: 24, paddingBottom: 32, gap: 12 }}>
         {current > 0 && (
           <TouchableOpacity
-            style={{ flex: 1, borderWidth: 1, borderColor: '#E5E7EB', paddingVertical: 16, borderRadius: 16, alignItems: 'center' }}
+            style={{ flex: 1, borderWidth: 1, borderColor: '#E6E2DB', paddingVertical: 16, borderRadius: 16, alignItems: 'center' }}
             onPress={() => goToSlide(current - 1)}
             accessibilityLabel="Slide anterior"
             accessibilityRole="button"
           >
-            <Text style={{ color: '#374151', fontWeight: '600' }}>Anterior</Text>
+            <Text style={{ color: '#3A3731', fontWeight: '600' }}>Anterior</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
-          style={{ flex: 1, backgroundColor: '#8B5CF6', paddingVertical: 16, borderRadius: 16, alignItems: 'center' }}
+          style={{ flex: 1, backgroundColor: '#3D7A67', paddingVertical: 16, borderRadius: 16, alignItems: 'center' }}
           onPress={isLast ? finish : () => goToSlide(current + 1)}
           accessibilityLabel={isLast ? 'Começar a usar o MindUni' : 'Próximo slide'}
           accessibilityRole="button"

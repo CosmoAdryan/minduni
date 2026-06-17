@@ -1,78 +1,83 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { useUser } from '../context/UserContext';
 
 /**
- * XPToast — notificação visual animada que aparece no topo da tela
- * sempre que o usuário ganha XP. Renderizado no root layout para
- * funcionar em qualquer tab/tela.
+ * XPToast — notificação visual animada (Reanimated) que aparece no topo da tela
+ * sempre que o usuário ganha XP. Entrada com spring, saída com ease-in.
+ * Renderizado no root layout para funcionar em qualquer tab/tela.
  */
 export default function XPToast() {
   const { xpNotification } = useUser();
-  const translateY = useRef(new Animated.Value(-80)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useSharedValue(-90);
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.94);
   // mantém o valor mesmo durante o fade-out
   const lastAmount = useRef(0);
+  const exitTimer = useRef(null);
 
   useEffect(() => {
     if (!xpNotification) return;
     lastAmount.current = xpNotification;
 
-    Animated.sequence([
-      Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: 0,
-          useNativeDriver: true,
-          speed: 22,
-          bounciness: 10,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.delay(1700),
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: -80,
-          duration: 280,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 280,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
+    // Háptico leve no momento em que o toast aparece.
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
+    // Entrada — spring suave, overshoot discreto.
+    translateY.value = withSpring(0, { damping: 14, stiffness: 180 });
+    scale.value = withSpring(1, { damping: 14, stiffness: 180 });
+    opacity.value = withTiming(1, { duration: 200 });
+
+    // Saída — ease-in, mais rápido que a entrada (sai pelo mesmo caminho).
+    clearTimeout(exitTimer.current);
+    exitTimer.current = setTimeout(() => {
+      translateY.value = withTiming(-90, { duration: 240, easing: Easing.in(Easing.ease) });
+      scale.value = withTiming(0.94, { duration: 240, easing: Easing.in(Easing.ease) });
+      opacity.value = withTiming(0, { duration: 240, easing: Easing.in(Easing.ease) });
+    }, 2080);
+
+    return () => clearTimeout(exitTimer.current);
   }, [xpNotification]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    opacity: opacity.value,
+  }));
 
   return (
     <Animated.View
       pointerEvents="none"
       accessibilityLiveRegion="polite"
       accessibilityLabel={`Você ganhou ${lastAmount.current} XP`}
-      style={{
-        position: 'absolute',
-        top: 56,
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-        zIndex: 9999,
-        transform: [{ translateY }],
-        opacity,
-      }}
+      style={[
+        {
+          position: 'absolute',
+          top: 56,
+          left: 0,
+          right: 0,
+          alignItems: 'center',
+          zIndex: 9999,
+        },
+        style,
+      ]}
     >
       <View
         style={{
-          backgroundColor: '#7C3AED',
+          backgroundColor: '#D4973E',
           paddingHorizontal: 22,
           paddingVertical: 10,
           borderRadius: 28,
           flexDirection: 'row',
           alignItems: 'center',
-          shadowColor: '#6D28D9',
+          shadowColor: '#B87A28',
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.35,
           shadowRadius: 10,
