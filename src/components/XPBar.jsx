@@ -1,7 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { useUser } from '../context/UserContext';
-import { LEVELS } from '../context/UserContext';
+
+// Barra de progresso que anima o preenchimento sempre que o XP muda.
+// Material ease — acelera rápido, desacelera suave no destino.
+function AnimatedFill({ percent, track, fill, height }) {
+  const w = useSharedValue(percent);
+
+  useEffect(() => {
+    w.value = withTiming(percent, { duration: 700, easing: Easing.out(Easing.cubic) });
+  }, [percent]);
+
+  const style = useAnimatedStyle(() => ({ width: `${w.value}%` }));
+
+  return (
+    <View style={{ height, backgroundColor: track, borderRadius: 999, overflow: 'hidden' }}>
+      <Animated.View style={[{ height: '100%', backgroundColor: fill, borderRadius: 999 }, style]} />
+    </View>
+  );
+}
 
 export default function XPBar({ compact = false }) {
   const { progress, levelInfo, nextLevel } = useUser();
@@ -18,15 +41,10 @@ export default function XPBar({ compact = false }) {
     return (
       <View className="px-3 py-2">
         <View className="flex-row justify-between items-center mb-1">
-          <Text className="text-xs font-semibold text-purple-700">Nível {levelInfo.level}</Text>
-          <Text className="text-xs text-gray-500">{isMax ? 'MAX' : `${percent}%`}</Text>
+          <Text className="text-xs font-semibold text-sage-600">Nível {levelInfo.level}</Text>
+          <Text className="text-xs text-stone-500">{isMax ? 'MAX' : `${percent}%`}</Text>
         </View>
-        <View className="h-2 bg-purple-100 rounded-full overflow-hidden">
-          <View
-            className="h-full bg-purple-500 rounded-full"
-            style={{ width: `${percent}%` }}
-          />
-        </View>
+        <AnimatedFill percent={percent} track="#EEF5F1" fill="#3D7A67" height={8} />
       </View>
     );
   }
@@ -35,29 +53,27 @@ export default function XPBar({ compact = false }) {
     <View className="bg-white rounded-2xl p-4 shadow-sm">
       <View className="flex-row justify-between items-center mb-2">
         <View>
-          <Text className="text-lg font-bold text-gray-800">Nível {levelInfo.level}</Text>
-          <Text className="text-sm text-purple-600 font-medium">{levelInfo.name}</Text>
+          <Text className="text-lg font-bold text-stone-900">Nível {levelInfo.level}</Text>
+          <Text className="text-sm text-sage-500 font-medium">{levelInfo.name}</Text>
         </View>
         <View className="items-end">
-          <Text className="text-2xl font-bold text-purple-600">{currentXP}</Text>
-          <Text className="text-xs text-gray-500">XP total</Text>
+          <Text className="text-2xl font-bold text-sage-500">{currentXP}</Text>
+          <Text className="text-xs text-stone-500">XP total</Text>
         </View>
       </View>
-      <View className="h-3 bg-purple-100 rounded-full overflow-hidden mb-1">
-        <View
-          className="h-full rounded-full"
-          style={{
-            width: `${percent}%`,
-            backgroundColor: '#8B5CF6',
-          }}
-        />
+      <View
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: 100, now: percent, text: isMax ? 'Nível máximo' : `${percent}% para o próximo nível` }}
+        className="mb-1"
+      >
+        <AnimatedFill percent={percent} track="#EEF5F1" fill="#3D7A67" height={12} />
       </View>
       <View className="flex-row justify-between">
-        <Text className="text-xs text-gray-500">{currentXP} XP</Text>
+        <Text className="text-xs text-stone-500">{currentXP} XP</Text>
         {isMax ? (
-          <Text className="text-xs font-bold text-purple-600">NÍVEL MÁXIMO!</Text>
+          <Text className="text-xs font-bold text-sage-500">NÍVEL MÁXIMO!</Text>
         ) : (
-          <Text className="text-xs text-gray-500">{nextLevelXP} XP</Text>
+          <Text className="text-xs text-stone-500">{nextLevelXP} XP</Text>
         )}
       </View>
     </View>

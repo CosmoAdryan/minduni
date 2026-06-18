@@ -1,13 +1,17 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  SafeAreaView, KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Send, RefreshCcw, AlertCircle } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import { ChatMessage, TypingIndicator } from '../../src/components/ChatMessage';
 import { detectCrisis } from '../../src/data/chatResponses';
 import CrisisModal from '../../src/components/CrisisModal';
+import CVVButton from '../../src/components/CVVButton';
+import MoodOption from '../../src/components/MoodOption';
+import { MOOD_COLORS } from '../../src/theme/tokens';
 import * as chatService from '../../src/services/chatService';
 
 const MOOD_OPTIONS = [
@@ -26,7 +30,7 @@ const SAGE_INTRO = 'Olá! Sou o Sage, seu companheiro de bem-estar mental. Estou
 function StepIndicator({ phase }) {
   const steps = PHASE_LABELS;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 24, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 24, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#F4F2EE' }}>
       {steps.map((label, i) => {
         const stepActive = phase === 'pre_mood' ? i === 0 : phase === 'chatting' ? i === 1 : i === 2;
         const stepDone = phase === 'chatting' ? i === 0 : phase === 'post_mood' ? i <= 1 : phase === 'done' ? i <= 2 : false;
@@ -35,25 +39,39 @@ function StepIndicator({ phase }) {
             <View style={{ alignItems: 'center' }}>
               <View style={{
                 width: 28, height: 28, borderRadius: 14,
-                backgroundColor: stepDone ? '#8B5CF6' : stepActive ? '#EDE9FE' : '#F3F4F6',
+                backgroundColor: stepDone ? '#3D7A67' : stepActive ? '#D4E9DE' : '#F4F2EE',
                 alignItems: 'center', justifyContent: 'center',
                 borderWidth: stepActive ? 2 : 0,
-                borderColor: '#8B5CF6',
+                borderColor: '#3D7A67',
               }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: stepDone ? 'white' : stepActive ? '#8B5CF6' : '#9CA3AF' }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: stepDone ? 'white' : stepActive ? '#3D7A67' : '#A29D95' }}>
                   {stepDone ? '✓' : i + 1}
                 </Text>
               </View>
-              <Text style={{ fontSize: 10, fontWeight: '600', color: stepActive || stepDone ? '#8B5CF6' : '#9CA3AF', marginTop: 2 }}>
+              <Text style={{ fontSize: 10, fontWeight: '600', color: stepActive || stepDone ? '#3D7A67' : '#A29D95', marginTop: 2 }}>
                 {label}
               </Text>
             </View>
             {i < steps.length - 1 && (
-              <View style={{ flex: 1, height: 2, backgroundColor: stepDone ? '#8B5CF6' : '#E5E7EB', marginHorizontal: 4, marginBottom: 16 }} />
+              <View style={{ flex: 1, height: 2, backgroundColor: stepDone ? '#3D7A67' : '#E6E2DB', marginHorizontal: 4, marginBottom: 16 }} />
             )}
           </React.Fragment>
         );
       })}
+    </View>
+  );
+}
+
+// Barra de topo presente em todas as fases do chat — garante que o CVV 188
+// nunca desapareça (princípio ético não-negociável).
+function ChatTopBar() {
+  return (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, backgroundColor: '#FAFAF8',
+    }}>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: '#1C1917' }}>Conversa com o Sage</Text>
+      <CVVButton />
     </View>
   );
 }
@@ -181,47 +199,46 @@ export default function ChatPage() {
 
   if (phase === 'pre_mood') {
     return (
-      <SafeAreaView className="flex-1 bg-purple-50">
+      <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
+        <ChatTopBar />
         <StepIndicator phase="pre_mood" />
         <View className="flex-1 justify-center px-6">
           <View className="bg-white rounded-3xl p-6 shadow-md">
-            <Text className="text-2xl font-bold text-gray-800 text-center mb-2">
+            <Text className="text-2xl font-bold text-stone-900 text-center mb-2">
               Como você está?
             </Text>
-            <Text className="text-gray-500 text-center mb-6">
+            <Text className="text-stone-500 text-center mb-6">
               Antes de conversar com o Sage, como está seu humor agora?
             </Text>
             <View className="flex-row justify-around mb-6">
               {MOOD_OPTIONS.map((m) => (
-                <TouchableOpacity
+                <MoodOption
                   key={m.value}
-                  className={`items-center p-3 rounded-2xl ${preMood === m.value ? 'bg-purple-100 border-2 border-purple-400' : 'bg-gray-50'}`}
+                  emoji={m.emoji}
+                  label={m.label}
+                  color={MOOD_COLORS[m.value - 1]}
+                  selected={preMood === m.value}
                   onPress={() => setPreMood(m.value)}
                   accessibilityLabel={`Humor: ${m.label}`}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: preMood === m.value }}
-                >
-                  <Text style={{ fontSize: 32 }}>{m.emoji}</Text>
-                  <Text className="text-xs text-gray-600 mt-1">{m.label}</Text>
-                </TouchableOpacity>
+                />
               ))}
             </View>
             <TouchableOpacity
-              className={`py-4 rounded-2xl items-center ${preMood ? 'bg-purple-600' : 'bg-gray-200'}`}
+              className={`py-4 rounded-2xl items-center ${preMood ? 'bg-sage-500' : 'bg-stone-200'}`}
               onPress={startChat}
               disabled={!preMood}
               accessibilityLabel="Começar conversa com o Sage"
               accessibilityRole="button"
               accessibilityState={{ disabled: !preMood }}
             >
-              <Text className={`font-bold text-base ${preMood ? 'text-white' : 'text-gray-400'}`}>
+              <Text className={`font-bold text-base ${preMood ? 'text-white' : 'text-stone-400'}`}>
                 Começar conversa
               </Text>
             </TouchableOpacity>
           </View>
           <View className="flex-row items-start mt-4 px-2">
-            <AlertCircle size={14} color="#9CA3AF" style={{ marginTop: 2, marginRight: 6 }} />
-            <Text className="text-xs text-gray-400 flex-1">
+            <AlertCircle size={14} color="#A29D95" style={{ marginTop: 2, marginRight: 6 }} />
+            <Text className="text-xs text-stone-400 flex-1">
               O Sage é um apoio complementar e não substitui atendimento psicológico profissional. Em emergências, ligue para o CVV: 188.
             </Text>
           </View>
@@ -232,40 +249,39 @@ export default function ChatPage() {
 
   if (phase === 'post_mood') {
     return (
-      <SafeAreaView className="flex-1 bg-purple-50">
+      <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
+        <ChatTopBar />
         <StepIndicator phase="post_mood" />
         <View className="flex-1 justify-center px-6">
           <View className="bg-white rounded-3xl p-6 shadow-md">
-            <Text className="text-2xl font-bold text-gray-800 text-center mb-2">
+            <Text className="text-2xl font-bold text-stone-900 text-center mb-2">
               E agora?
             </Text>
-            <Text className="text-gray-500 text-center mb-6">
+            <Text className="text-stone-500 text-center mb-6">
               Como você está se sentindo após a conversa?
             </Text>
             <View className="flex-row justify-around mb-6">
               {MOOD_OPTIONS.map((m) => (
-                <TouchableOpacity
+                <MoodOption
                   key={m.value}
-                  className={`items-center p-3 rounded-2xl ${postMood === m.value ? 'bg-purple-100 border-2 border-purple-400' : 'bg-gray-50'}`}
+                  emoji={m.emoji}
+                  label={m.label}
+                  color={MOOD_COLORS[m.value - 1]}
+                  selected={postMood === m.value}
                   onPress={() => setPostMood(m.value)}
                   accessibilityLabel={`Humor: ${m.label}`}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: postMood === m.value }}
-                >
-                  <Text style={{ fontSize: 32 }}>{m.emoji}</Text>
-                  <Text className="text-xs text-gray-600 mt-1">{m.label}</Text>
-                </TouchableOpacity>
+                />
               ))}
             </View>
             <TouchableOpacity
-              className={`py-4 rounded-2xl items-center ${postMood ? 'bg-purple-600' : 'bg-gray-200'}`}
+              className={`py-4 rounded-2xl items-center ${postMood ? 'bg-sage-500' : 'bg-stone-200'}`}
               onPress={finishSession}
               disabled={!postMood}
               accessibilityLabel="Finalizar sessão e ganhar 50 XP"
               accessibilityRole="button"
               accessibilityState={{ disabled: !postMood }}
             >
-              <Text className={`font-bold text-base ${postMood ? 'text-white' : 'text-gray-400'}`}>
+              <Text className={`font-bold text-base ${postMood ? 'text-white' : 'text-stone-400'}`}>
                 Finalizar (+50 XP)
               </Text>
             </TouchableOpacity>
@@ -280,12 +296,13 @@ export default function ChatPage() {
     const doneEmoji = diff > 0 ? '🎉' : diff < 0 ? '🌱' : '💙';
     const doneTitle = diff > 0 ? 'Você melhorou!' : diff < 0 ? 'Obrigado por compartilhar.' : 'Você está aqui.';
     return (
-      <SafeAreaView className="flex-1 bg-purple-50">
+      <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
+        <ChatTopBar />
         <View className="flex-1 justify-center px-6">
           <View className="bg-white rounded-3xl p-6 shadow-md items-center">
             <Text style={{ fontSize: 60 }}>{doneEmoji}</Text>
-            <Text className="text-2xl font-bold text-gray-800 mt-4 mb-2">{doneTitle}</Text>
-            <Text className="text-gray-500 text-center mb-4">
+            <Text className="text-2xl font-bold text-stone-900 mt-4 mb-2">{doneTitle}</Text>
+            <Text className="text-stone-500 text-center mb-4">
               Você completou uma sessão com o Sage e ganhou +50 XP!
             </Text>
             {diff > 0 ? (
@@ -297,12 +314,12 @@ export default function ChatPage() {
                 Às vezes é difícil. Falar sobre isso já é um passo importante.
               </Text>
             ) : (
-              <Text className="text-gray-600 font-semibold mb-6">
+              <Text className="text-stone-600 font-semibold mb-6">
                 Manter-se estável também é uma conquista. Continue cuidando de você.
               </Text>
             )}
             <TouchableOpacity
-              className="bg-purple-600 py-4 px-8 rounded-2xl flex-row items-center"
+              className="bg-sage-500 py-4 px-8 rounded-2xl flex-row items-center"
               onPress={resetChat}
               accessibilityLabel="Iniciar nova conversa"
               accessibilityRole="button"
@@ -318,36 +335,39 @@ export default function ChatPage() {
 
   // Chatting phase
   return (
-    <SafeAreaView className="flex-1 bg-purple-50">
-      <StepIndicator phase="chatting" />
+    <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={90}
+        behavior="padding"
+        keyboardVerticalOffset={0}
       >
-        <View className="bg-white px-4 py-3 flex-row items-center justify-between border-b border-gray-100 shadow-sm">
+        <StepIndicator phase="chatting" />
+        <View className="bg-white px-4 py-3 flex-row items-center justify-between border-b border-stone-200 shadow-sm">
           <View className="flex-row items-center">
-            <View className="w-10 h-10 rounded-full bg-purple-100 items-center justify-center mr-3">
+            <View className="w-10 h-10 rounded-full bg-sage-100 items-center justify-center mr-3">
               <Text style={{ fontSize: 20 }}>🌿</Text>
             </View>
             <View>
-              <Text className="font-bold text-gray-800">Sage</Text>
+              <Text className="font-bold text-stone-900">Sage</Text>
               <Text className="text-xs text-green-500">● Online</Text>
             </View>
           </View>
-          <TouchableOpacity
-            className="bg-purple-100 px-3 py-2 rounded-xl"
-            onPress={endSession}
-            accessibilityLabel="Encerrar conversa com o Sage"
-            accessibilityRole="button"
-          >
-            <Text className="text-purple-600 text-sm font-semibold">Encerrar</Text>
-          </TouchableOpacity>
+          <View className="flex-row items-center" style={{ gap: 8 }}>
+            <CVVButton compact />
+            <TouchableOpacity
+              className="bg-sage-100 px-3 py-2 rounded-xl"
+              onPress={endSession}
+              accessibilityLabel="Encerrar conversa com o Sage"
+              accessibilityRole="button"
+            >
+              <Text className="text-sage-500 text-sm font-semibold">Encerrar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View style={{ backgroundColor: '#FEF3C7', paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center' }}>
-          <AlertCircle size={12} color="#92400E" style={{ marginRight: 6 }} />
-          <Text style={{ fontSize: 11, color: '#92400E', flex: 1 }}>
+        <View style={{ backgroundColor: '#FEF8EC', paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center' }}>
+          <AlertCircle size={12} color="#B87A28" style={{ marginRight: 6 }} />
+          <Text style={{ fontSize: 11, color: '#B87A28', flex: 1 }}>
             Sage é um apoio complementar, não substitui psicólogos. Crise? CVV: 188
           </Text>
         </View>
@@ -363,9 +383,9 @@ export default function ChatPage() {
           {typing && <TypingIndicator />}
         </ScrollView>
 
-        <View className="bg-white px-4 py-3 flex-row items-end border-t border-gray-100">
+        <View className="bg-white px-4 py-3 flex-row items-end border-t border-stone-200">
           <TextInput
-            className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 mr-3 text-gray-800 max-h-28"
+            className="flex-1 bg-stone-100 border border-stone-200 rounded-2xl px-4 py-3 mr-3 text-stone-900 max-h-28"
             placeholder="Digite sua mensagem..."
             value={input}
             onChangeText={setInput}
@@ -373,14 +393,14 @@ export default function ChatPage() {
             accessibilityLabel="Campo de mensagem para o Sage"
           />
           <TouchableOpacity
-            className={`w-11 h-11 rounded-full items-center justify-center ${input.trim() ? 'bg-purple-600' : 'bg-gray-200'}`}
+            className={`w-11 h-11 rounded-full items-center justify-center ${input.trim() ? 'bg-sage-500' : 'bg-stone-200'}`}
             onPress={sendMessage}
             disabled={!input.trim() || typing}
             accessibilityLabel="Enviar mensagem"
             accessibilityRole="button"
             accessibilityState={{ disabled: !input.trim() }}
           >
-            <Send size={18} color={input.trim() ? 'white' : '#9CA3AF'} />
+            <Send size={18} color={input.trim() ? 'white' : '#A29D95'} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

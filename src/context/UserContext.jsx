@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import * as authService from '../services/authService';
 import * as progressService from '../services/progressService';
@@ -15,11 +15,31 @@ export function UserProvider({ children }) {
   const [progress, setProgress] = useState(progressService.INITIAL_PROGRESS);
   const [xpNotification, setXpNotification] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isRecovering, setIsRecovering] = useState(false);
+  // Ref espelha isRecovering para uso dentro do listener de auth (closure).
+  const recoveringRef = useRef(false);
+
+  function beginRecovery() {
+    recoveringRef.current = true;
+    setIsRecovering(true);
+  }
+
+  function endRecovery() {
+    recoveringRef.current = false;
+    setIsRecovering(false);
+  }
 
   useEffect(() => {
     // Restore session on app launch and listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // Durante a recuperação de senha a sessão (temporária) é criada pelo
+        // handler de deep link. Não entramos na área autenticada: deixamos o
+        // usuário na tela de redefinição.
+        if (recoveringRef.current) {
+          setLoading(false);
+          return;
+        }
         if (session?.user) {
           try {
             const [user, prog] = await Promise.all([
@@ -43,8 +63,10 @@ export function UserProvider({ children }) {
   }, []);
 
   function showXpNotification(amount) {
+    // Não exibe toast para ganho zero (evita "+0 XP").
+    if (!amount || amount <= 0) return;
     setXpNotification(amount);
-    setTimeout(() => setXpNotification(null), 2500);
+    setTimeout(() => setXpNotification(null), 3100);
   }
 
   async function register(name, email, password) {
@@ -68,8 +90,30 @@ export function UserProvider({ children }) {
 
   async function logout() {
     await authService.logout();
+    endRecovery();
     setCurrentUser(null);
     setProgress(progressService.INITIAL_PROGRESS);
+  }
+
+  async function resetPassword(email) {
+    await authService.resetPassword(email);
+  }
+
+  // Valida o código OTP e abre a sessão de recuperação. Marca isRecovering para
+  // que o AuthGuard não redirecione o usuário ao entrar a sessão temporária:
+  // ele deve permanecer na tela de redefinição até salvar a nova senha.
+  async function verifyRecoveryOtp(email, token) {
+    beginRecovery();
+    try {
+      await authService.verifyRecoveryOtp(email, token);
+    } catch (e) {
+      endRecovery();
+      throw e;
+    }
+  }
+
+  async function updatePassword(newPassword) {
+    await authService.updatePassword(newPassword);
   }
 
   async function addXP(amount) {
@@ -115,12 +159,16 @@ export function UserProvider({ children }) {
     currentUser,
     progress,
     loading,
+    isRecovering,
     xpNotification,
     levelInfo,
     nextLevel,
     register,
     login,
     logout,
+    resetPassword,
+    verifyRecoveryOtp,
+    updatePassword,
     addXP,
     addMoodEntry,
     addChatSession,

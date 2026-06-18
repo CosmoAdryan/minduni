@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   JOURNAL: 'minduni_journal',
   GRATITUDE: 'minduni_gratitude',
   ONBOARDING: 'minduni_onboarding_done',
+  CONSENT: 'minduni_consent_lgpd',
 };
 
 export function challengeKey(date) {

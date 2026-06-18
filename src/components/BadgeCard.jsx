@@ -1,17 +1,36 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 
+// Mapa estático de variantes — substitui o className dinâmico (badge.color),
+// que não era resolvido pelo build do NativeWind. Valores dos tokens da Fase 4.
+const VARIANTS = {
+  sage:  { bg: '#EEF5F1', text: '#1E4D41' }, // sage-50 / sage-700
+  amber: { bg: '#FEF8EC', text: '#B87A28' }, // xp-light / xp-dark
+};
+const LOCKED = { bg: '#F4F2EE', text: '#A29D95' }; // stone-100 / stone-400
+
 export default function BadgeCard({ badge, unlocked }) {
+  const style = unlocked ? (VARIANTS[badge.variant] || VARIANTS.sage) : LOCKED;
+
   return (
     <View
-      className={`items-center p-3 rounded-2xl ${unlocked ? badge.color : 'bg-gray-100'} m-1`}
-      style={{ opacity: unlocked ? 1 : 0.5, flex: 1, minWidth: 70 }}
+      style={{
+        flex: 1,
+        minWidth: 70,
+        alignItems: 'center',
+        padding: 12,
+        margin: 4,
+        borderRadius: 16,
+        backgroundColor: style.bg,
+        opacity: unlocked ? 1 : 0.6,
+      }}
+      accessibilityLabel={unlocked ? badge.name : `${badge.name}, ainda não conquistado`}
     >
-      <Text style={{ fontSize: 28, marginBottom: 4, filter: unlocked ? 'none' : 'grayscale(100%)' }}>
+      <Text style={{ fontSize: 28, marginBottom: 4, opacity: unlocked ? 1 : 0.45 }}>
         {badge.icon}
       </Text>
       <Text
-        className={`text-xs font-semibold text-center ${unlocked ? badge.textColor : 'text-gray-400'}`}
+        style={{ fontSize: 11, fontWeight: '600', textAlign: 'center', color: style.text }}
         numberOfLines={2}
       >
         {badge.name}
