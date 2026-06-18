@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Modal, TextInput,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -11,7 +11,14 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import Svg, { Circle } from 'react-native-svg';
 import { CheckCircle, X, Play, Pause, RotateCcw } from 'lucide-react-native';
+
+// Dimensões do anel de progresso (timer de meditação).
+const RING_SIZE = 176;
+const RING_STROKE = 12;
+const RING_R = (RING_SIZE - RING_STROKE) / 2;
+const RING_CIRC = 2 * Math.PI * RING_R;
 import { useUser } from '../../src/context/UserContext';
 import { getDailyChallenges } from '../../src/data/challenges';
 import { getWeeklyCompletion } from '../../src/services/challengeService';
@@ -97,11 +104,30 @@ function MindfulnessChallenge({ challenge, onComplete, onClose }) {
         </TouchableOpacity>
       </View>
       <View className="items-center mb-8">
-        <View className="w-40 h-40 rounded-full border-8 border-blue-200 items-center justify-center bg-blue-50">
-          <View
-            className="absolute inset-0 rounded-full border-8 border-blue-500"
-            style={{ borderRightColor: 'transparent', transform: [{ rotate: `${progress * 360}deg` }] }}
-          />
+        <View style={{ width: RING_SIZE, height: RING_SIZE, alignItems: 'center', justifyContent: 'center' }}>
+          {/* Anel SVG: a faixa azul escura representa o tempo restante e
+              diminui (esvazia) conforme o cronômetro avança. */}
+          <Svg width={RING_SIZE} height={RING_SIZE} style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
+            <Circle
+              cx={RING_SIZE / 2}
+              cy={RING_SIZE / 2}
+              r={RING_R}
+              stroke="#DBEAFE"
+              strokeWidth={RING_STROKE}
+              fill="#EFF6FF"
+            />
+            <Circle
+              cx={RING_SIZE / 2}
+              cy={RING_SIZE / 2}
+              r={RING_R}
+              stroke="#2563EB"
+              strokeWidth={RING_STROKE}
+              fill="none"
+              strokeDasharray={RING_CIRC}
+              strokeDashoffset={RING_CIRC * progress}
+              strokeLinecap="round"
+            />
+          </Svg>
           <Text className="text-3xl font-bold text-blue-600">
             {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
           </Text>
@@ -361,7 +387,7 @@ export default function ChallengesPage() {
   const completedCount = challengeList.filter((c) => completed.includes(c.id)).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50">
+    <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         <Text className="text-2xl font-bold text-stone-900 mb-1">Desafios de hoje</Text>
         <Text className="text-stone-500 mb-4">{completedCount}/3 completos</Text>
@@ -414,7 +440,7 @@ export default function ChallengesPage() {
 
       <Modal visible={!!active} animationType="slide" presentationStyle="pageSheet">
         {active && (
-          <SafeAreaView className="flex-1 bg-white">
+          <SafeAreaView edges={['top']} className="flex-1 bg-white">
             {active.type === 'mindfulness' && (
               <MindfulnessChallenge challenge={active} onComplete={() => handleComplete(active)} onClose={() => setActive(null)} />
             )}

@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  SafeAreaView, KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Send, RefreshCcw, AlertCircle } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import { ChatMessage, TypingIndicator } from '../../src/components/ChatMessage';
@@ -198,7 +199,7 @@ export default function ChatPage() {
 
   if (phase === 'pre_mood') {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50">
+      <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
         <ChatTopBar />
         <StepIndicator phase="pre_mood" />
         <View className="flex-1 justify-center px-6">
@@ -248,7 +249,7 @@ export default function ChatPage() {
 
   if (phase === 'post_mood') {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50">
+      <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
         <ChatTopBar />
         <StepIndicator phase="post_mood" />
         <View className="flex-1 justify-center px-6">
@@ -295,7 +296,7 @@ export default function ChatPage() {
     const doneEmoji = diff > 0 ? '🎉' : diff < 0 ? '🌱' : '💙';
     const doneTitle = diff > 0 ? 'Você melhorou!' : diff < 0 ? 'Obrigado por compartilhar.' : 'Você está aqui.';
     return (
-      <SafeAreaView className="flex-1 bg-stone-50">
+      <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
         <ChatTopBar />
         <View className="flex-1 justify-center px-6">
           <View className="bg-white rounded-3xl p-6 shadow-md items-center">
@@ -334,13 +335,13 @@ export default function ChatPage() {
 
   // Chatting phase
   return (
-    <SafeAreaView className="flex-1 bg-stone-50">
-      <StepIndicator phase="chatting" />
+    <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={90}
+        behavior="padding"
+        keyboardVerticalOffset={0}
       >
+        <StepIndicator phase="chatting" />
         <View className="bg-white px-4 py-3 flex-row items-center justify-between border-b border-stone-200 shadow-sm">
           <View className="flex-row items-center">
             <View className="w-10 h-10 rounded-full bg-sage-100 items-center justify-center mr-3">

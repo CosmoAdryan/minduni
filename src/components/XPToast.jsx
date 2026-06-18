@@ -39,10 +39,10 @@ export default function XPToast() {
     // Saída — ease-in, mais rápido que a entrada (sai pelo mesmo caminho).
     clearTimeout(exitTimer.current);
     exitTimer.current = setTimeout(() => {
-      translateY.value = withTiming(-90, { duration: 240, easing: Easing.in(Easing.ease) });
-      scale.value = withTiming(0.94, { duration: 240, easing: Easing.in(Easing.ease) });
-      opacity.value = withTiming(0, { duration: 240, easing: Easing.in(Easing.ease) });
-    }, 2080);
+      translateY.value = withTiming(-90, { duration: 320, easing: Easing.in(Easing.ease) });
+      scale.value = withTiming(0.94, { duration: 320, easing: Easing.in(Easing.ease) });
+      opacity.value = withTiming(0, { duration: 320, easing: Easing.in(Easing.ease) });
+    }, 2700);
 
     return () => clearTimeout(exitTimer.current);
   }, [xpNotification]);

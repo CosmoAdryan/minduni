@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, SafeAreaView, ActivityIndicator,
+  View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Search, X } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
@@ -87,11 +88,11 @@ export default function JournalPage() {
     setSaving(true);
     try {
       await addJournalEntry(selectedMood, text.trim());
+      // O ganho de XP é comunicado pelo XPToast global (evita aviso duplicado).
       await addXP(20);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSelectedMood(null);
       setText('');
-      showToast('success', '✅ Entrada salva! +20 XP');
       loadEntries();
     } catch (e) {
       showToast('error', '❌ Erro ao salvar. Tente novamente.');
@@ -109,7 +110,7 @@ export default function JournalPage() {
   const canSave = selectedMood && text.trim().length > 0 && !saving;
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50">
+    <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         <Text className="text-2xl font-bold text-stone-900 mb-4">Diário emocional</Text>
 

@@ -15,8 +15,10 @@ module.exports = function (api) {
           },
         },
       ],
-      // Reanimated deve ser SEMPRE o último plugin.
-      "react-native-reanimated/plugin",
+      // Reanimated 4 / SDK 54: o plugin de worklets já é incluído pelo
+      // babel-preset-expo automaticamente. Não adicionar manualmente o plugin
+      // (react-native-reanimated/plugin foi movido para react-native-worklets
+      // e declará-lo aqui causa conflito).
     ],
   };
 };

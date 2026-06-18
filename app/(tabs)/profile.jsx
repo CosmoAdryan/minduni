@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, SafeAreaView, Alert,
+  View, Text, ScrollView, TouchableOpacity, Alert,
 } from 'react-native';
-import { LogOut, Flame, Award, Zap, BookOpen, MessageCircle, Calendar } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { LogOut, Flame, Award, Zap, BookOpen, MessageCircle, Calendar, Shield } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import { BADGES } from '../../src/data/badges';
 import XPBar from '../../src/components/XPBar';
@@ -10,6 +12,7 @@ import BadgeCard from '../../src/components/BadgeCard';
 
 export default function ProfilePage() {
   const { currentUser, progress, logout } = useUser();
+  const router = useRouter();
 
   function handleLogout() {
     Alert.alert('Sair', 'Tem certeza que quer sair?', [
@@ -32,7 +35,7 @@ export default function ProfilePage() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50">
+    <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         {/* Avatar */}
         <View className="items-center mb-6">
@@ -76,6 +79,17 @@ export default function ProfilePage() {
             />
           ))}
         </View>
+
+        {/* Política de Privacidade */}
+        <TouchableOpacity
+          className="bg-white border border-stone-200 py-4 rounded-2xl flex-row items-center justify-center mb-3"
+          onPress={() => router.push('/privacy-policy')}
+          accessibilityRole="link"
+          accessibilityLabel="Abrir a Política de Privacidade"
+        >
+          <Shield size={18} color="#3D7A67" style={{ marginRight: 8 }} />
+          <Text style={{ color: '#2D6254' }} className="font-semibold">Política de Privacidade</Text>
+        </TouchableOpacity>
 
         {/* Logout */}
         <TouchableOpacity

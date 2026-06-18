@@ -63,8 +63,10 @@ export function UserProvider({ children }) {
   }, []);
 
   function showXpNotification(amount) {
+    // Não exibe toast para ganho zero (evita "+0 XP").
+    if (!amount || amount <= 0) return;
     setXpNotification(amount);
-    setTimeout(() => setXpNotification(null), 2500);
+    setTimeout(() => setXpNotification(null), 3100);
   }
 
   async function register(name, email, password) {

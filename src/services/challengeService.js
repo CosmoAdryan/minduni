@@ -54,5 +54,8 @@ export async function markChallengeComplete(challengeId) {
 
   await supabase
     .from('challenge_logs')
-    .upsert({ user_id: userId, challenge_id: challengeId, completed_date: today });
+    .upsert(
+      { user_id: userId, challenge_id: challengeId, completed_date: today },
+      { onConflict: 'user_id,challenge_id,completed_date' },
+    );
 }

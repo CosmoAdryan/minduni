@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { getConsentDate, CONSENT_VERSION } from './onboardingService';
 
 export async function register(name, email, password) {
   const { data, error } = await supabase.auth.signUp({ email, password });
@@ -6,9 +7,12 @@ export async function register(name, email, password) {
   const user = data.user;
   if (!user) throw new Error('Erro ao criar conta');
 
+  // Vincula o consentimento LGPD (dado no onboarding) à conta. Usa a data do
+  // aceite local; se ausente, registra o momento do cadastro como fallback.
+  const consentAt = (await getConsentDate()) ?? new Date().toISOString();
   const { error: profileError } = await supabase
     .from('profiles')
-    .insert({ id: user.id, name });
+    .insert({ id: user.id, name, consent_given_at: consentAt, consent_version: CONSENT_VERSION });
   if (profileError) throw new Error(profileError.message);
 
   return { id: user.id, name, email, createdAt: user.created_at };

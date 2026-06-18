@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
   withSequence,
   runOnJS,
+  Easing,
 } from 'react-native-reanimated';
 import { Phone, Heart, CheckSquare, Square } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -20,14 +21,15 @@ export default function CrisisModal({ visible, onClose }) {
   const backdrop = useSharedValue(0);
   const cbScale = useSharedValue(1);
 
-  // Entrada: backdrop em fade + sheet sobe com spring (overshoot contido —
-  // contexto sério). Sem swipe-to-dismiss, sem botão X.
+  // Entrada: backdrop em fade + sheet sobe com easing suave, SEM overshoot/bounce
+  // — o contexto é sério e não combina com animação "saltitante".
+  // Sem swipe-to-dismiss, sem botão X.
   useEffect(() => {
     if (visible) {
       setAcknowledged(false);
       translateY.value = SCREEN_H;
       backdrop.value = withTiming(0.72, { duration: 300 });
-      translateY.value = withSpring(0, { damping: 18, stiffness: 180 });
+      translateY.value = withTiming(0, { duration: 360, easing: Easing.out(Easing.cubic) });
     }
   }, [visible]);
 

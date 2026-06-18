@@ -99,7 +99,7 @@ export async function saveProgress(progress) {
   const userId = await getCurrentUserId();
   const { error } = await supabase
     .from('progress')
-    .upsert({ user_id: userId, ...progressToDb(progress) });
+    .upsert({ user_id: userId, ...progressToDb(progress) }, { onConflict: 'user_id' });
   if (error) throw new Error(error.message);
   return progress;
 }

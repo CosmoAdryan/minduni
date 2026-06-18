@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, SafeAreaView, ActivityIndicator,
+  View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MessageCircle, Target, BookOpen, User, Flame, Award, Zap, ChevronRight } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -126,14 +127,14 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-stone-50 items-center justify-center">
+      <SafeAreaView edges={['top']} className="flex-1 bg-stone-50 items-center justify-center">
         <ActivityIndicator size="large" color="#3D7A67" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50">
+    <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }}>
         {/* Header */}
         <View className="bg-sage-500 px-6 pt-6 pb-10">
