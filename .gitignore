@@ -29,3 +29,11 @@ Thumbs.db
 # Build outputs
 android/
 ios/
+
+# Ferramentas e materiais locais (fora do versionamento)
+.claude/
+.mcp.json
+.agents/
+skills-lock.json
+ARTIGO_TECNICO.md
+design_handoff_minduni_fase4/
