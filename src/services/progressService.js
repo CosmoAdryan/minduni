@@ -23,7 +23,16 @@ export const INITIAL_PROGRESS = {
   chatSessions: 0,
   journalEntries: 0,
   daysActive: 1,
+  // Streak de engajamento no chat (independente do streak de login).
+  chatStreak: 0,
+  chatStreakDate: null,
 };
+
+// XP da primeira mensagem do dia no chat: começa em 5 e cresce +5 por dia
+// consecutivo até travar em 50 (10º dia). Quebrar a sequência volta a 5.
+function chatStreakXP(streakDay) {
+  return Math.min(streakDay, 10) * 5;
+}
 
 export function calculateLevel(xp) {
   for (let i = LEVELS.length - 1; i >= 0; i--) {
@@ -65,6 +74,8 @@ function dbToProgress(row) {
     chatSessions: row.chat_sessions ?? 0,
     journalEntries: row.journal_entries_count ?? 0,
     daysActive: row.days_active ?? 1,
+    chatStreak: row.chat_streak ?? 0,
+    chatStreakDate: row.chat_streak_date ?? null,
   };
 }
 
@@ -79,6 +90,8 @@ function progressToDb(progress) {
     chat_sessions: progress.chatSessions,
     journal_entries_count: progress.journalEntries,
     days_active: progress.daysActive,
+    chat_streak: progress.chatStreak ?? 0,
+    chat_streak_date: progress.chatStreakDate ?? null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -155,6 +168,31 @@ export async function addChatSession(currentProgress) {
   updated.unlockedBadges = checkBadges(updated);
   await saveProgress(updated);
   return updated;
+}
+
+// Recompensa a primeira mensagem do dia no chat com o Sage. Coexiste com o
+// streak de login: streak próprio (chatStreak) e XP escalonado 5 -> 50.
+// Returns { progress, chatXP } — chatXP é 0 se já recompensou hoje.
+export async function applyChatStreak(currentProgress) {
+  const today = new Date().toDateString();
+  if (currentProgress.chatStreakDate === today) {
+    return { progress: currentProgress, chatXP: 0 };
+  }
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isConsecutive = currentProgress.chatStreakDate === yesterday.toDateString();
+  const newStreak = isConsecutive ? (currentProgress.chatStreak || 0) + 1 : 1;
+  const xp = chatStreakXP(newStreak);
+  const updated = {
+    ...currentProgress,
+    chatStreak: newStreak,
+    chatStreakDate: today,
+    totalXP: (currentProgress.totalXP || 0) + xp,
+  };
+  updated.level = calculateLevel(updated.totalXP).level;
+  updated.unlockedBadges = checkBadges(updated);
+  await saveProgress(updated);
+  return { progress: updated, chatXP: xp };
 }
 
 export async function incrementJournalEntries(currentProgress) {
