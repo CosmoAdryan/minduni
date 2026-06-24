@@ -84,6 +84,20 @@ export async function getMessages(sessionId, limit = HISTORY_PAGE_SIZE) {
     }));
 }
 
+// Total de mensagens enviadas pelo usuário ao Sage (role 'user'). Usado como
+// estatística no perfil. Conta direto no banco — sem contador redundante.
+export async function getUserMessageCount() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return 0;
+  const { count, error } = await supabase
+    .from('chat_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('role', 'user');
+  if (error) return 0;
+  return count ?? 0;
+}
+
 // Saudação de abertura, só usada quando a conversa está vazia.
 // Não conta para nenhum limite.
 export async function getIntroMessage(sessionId, mood) {
