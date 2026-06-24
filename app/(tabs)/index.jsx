@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { MessageCircle, Target, BookOpen, User, Flame, Award, Zap, ChevronRight } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../src/context/UserContext';
 import XPBar from '../../src/components/XPBar';
 import StreakCard from '../../src/components/StreakCard';
+import MoodChart from '../../src/components/MoodChart';
 import { getDailyChallenges } from '../../src/data/challenges';
 import { getCompletedToday } from '../../src/services/challengeService';
 
@@ -19,79 +20,29 @@ const QUICK_ACTIONS = [
   { title: 'Jornada', icon: User, color: '#5A544C', bg: '#F4F2EE', route: '/profile' },
 ];
 
-const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-// Escala Jonauskaite (2020) — tristeza é azul profundo, nunca vermelho.
-const MOOD_COLORS = ['#3B6FAB', '#6B8FAB', '#888787', '#5E9B84', '#C9963A'];
-const MOOD_EMOJIS = ['😢', '😔', '😐', '😊', '😄'];
-
-function MoodChart({ moodData }) {
-  if (moodData.length === 0) return null;
-
-  const avg = moodData.reduce((s, m) => s + m.mood, 0) / moodData.length;
-  const insight =
-    avg >= 4
-      ? 'Sua semana foi excelente! Continue assim 🌟'
-      : avg >= 3
-      ? 'Semana estável. Pequenos passos importam 💚'
-      : 'Semana desafiadora. O Sage está aqui para te ouvir 💙';
-
-  return (
-    <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 16, elevation: 1 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: '#1C1917' }}>Humor recente</Text>
-        <Text style={{ fontSize: 12, color: '#3D7A67', fontWeight: '600' }}>
-          Média: {MOOD_EMOJIS[Math.round(avg) - 1]}
-        </Text>
-      </View>
-      {/* Chart area with average line overlay */}
-      <View style={{ position: 'relative' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 72, marginBottom: 4 }}>
-          {moodData.map((m, i) => {
-            const dayLabel = DAY_LABELS[new Date(m.date).getDay()];
-            const barH = Math.max(8, (m.mood / 5) * 60);
-            return (
-              <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
-                <View
-                  style={{ width: 20, borderRadius: 6, height: barH, backgroundColor: MOOD_COLORS[m.mood - 1], opacity: 0.85 }}
-                />
-                <Text style={{ fontSize: 9, color: '#A29D95', marginTop: 3 }}>{dayLabel}</Text>
-              </View>
-            );
-          })}
-        </View>
-        {/* Linha de média — posicionada na altura correspondente ao valor médio */}
-        <View
-          accessibilityLabel={`Linha de média de humor`}
-          style={{
-            position: 'absolute',
-            left: 4,
-            right: 4,
-            // 12px = espaço dos labels de dia; avg bar height proporcional a 60px de área
-            bottom: 12 + Math.max(8, (avg / 5) * 60),
-            height: 1.5,
-            backgroundColor: '#3D7A67',
-            opacity: 0.55,
-            borderRadius: 1,
-          }}
-        />
-      </View>
-      <Text style={{ fontSize: 12, color: '#756F66', marginTop: 4, fontStyle: 'italic' }}>{insight}</Text>
-    </View>
-  );
-}
-
 export default function Dashboard() {
-  const { currentUser, progress, loading } = useUser();
+  const { currentUser, progress, loading, getJournalEntries } = useUser();
   const router = useRouter();
   const [featuredChallenge, setFeaturedChallenge] = useState(null);
   const [loadingChallenge, setLoadingChallenge] = useState(true);
   const [showStreak, setShowStreak] = useState(false);
+  // Mesma fonte do gráfico do Diário, para os dois ficarem idênticos.
+  const [moodEntries, setMoodEntries] = useState([]);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
   const firstName = currentUser?.name?.split(' ')[0] || 'Explorador';
 
-  const moodData = (progress.moods || []).filter((m) => m.date).slice(-7);
+  // Recarrega ao focar a Home (reflete entradas criadas no Diário).
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getJournalEntries()
+        .then((d) => { if (active) setMoodEntries(d); })
+        .catch(() => {});
+      return () => { active = false; };
+    }, [])
+  );
 
   useEffect(() => {
     async function loadFeaturedChallenge() {
@@ -229,7 +180,7 @@ export default function Dashboard() {
           </View>
 
           {/* Mood Chart */}
-          <MoodChart moodData={moodData} />
+          <MoodChart data={moodEntries} />
         </View>
       </ScrollView>
     </SafeAreaView>

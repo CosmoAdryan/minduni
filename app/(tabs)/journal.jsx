@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { Search, X } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import MoodOption from '../../src/components/MoodOption';
+import MoodChart from '../../src/components/MoodChart';
 
 const MOODS = [
   { value: 1, emoji: '😢', label: 'Muito mal' },
@@ -16,42 +17,8 @@ const MOODS = [
   { value: 5, emoji: '😄', label: 'Ótimo' },
 ];
 
-const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 // Escala Jonauskaite (2020) — tristeza é azul profundo, nunca vermelho.
 const MOOD_COLORS = ['#3B6FAB', '#6B8FAB', '#888787', '#5E9B84', '#C9963A'];
-
-function MoodChart({ entries }) {
-  const data = entries.slice(0, 7).reverse();
-  if (data.length === 0) return null;
-
-  const avg = data.reduce((s, e) => s + e.mood, 0) / data.length;
-  const insight =
-    avg >= 4 ? 'Semana ótima! Seu esforço está valendo 🌟'
-    : avg >= 3 ? 'Semana equilibrada. Continue registrando 💚'
-    : 'Semana difícil. Falar com o Sage pode ajudar 💙';
-
-  return (
-    <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 1 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Text style={{ fontSize: 15, fontWeight: '700', color: '#1C1917' }}>Humor recente</Text>
-        <Text style={{ fontSize: 12, color: '#3D7A67', fontWeight: '600' }}>Média: {avg.toFixed(1)}/5</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 72, marginBottom: 4 }}>
-        {data.map((e, i) => {
-          const dayLabel = DAY_LABELS[new Date(e.date).getDay()];
-          const barH = Math.max(8, (e.mood / 5) * 60);
-          return (
-            <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
-              <View style={{ width: 20, borderRadius: 6, height: barH, backgroundColor: MOOD_COLORS[e.mood - 1], opacity: 0.85 }} />
-              <Text style={{ fontSize: 9, color: '#A29D95', marginTop: 3 }}>{dayLabel}</Text>
-            </View>
-          );
-        })}
-      </View>
-      <Text style={{ fontSize: 12, color: '#756F66', marginTop: 4, fontStyle: 'italic' }}>{insight}</Text>
-    </View>
-  );
-}
 
 export default function JournalPage() {
   const { addJournalEntry, getJournalEntries, addXP } = useUser();
@@ -183,7 +150,7 @@ export default function JournalPage() {
         </TouchableOpacity>
 
         {/* Mood Chart */}
-        <MoodChart entries={entries} />
+        <MoodChart data={entries} containerStyle={{ marginBottom: 16 }} />
 
         {/* History with filter + search */}
         {entries.length > 0 && (

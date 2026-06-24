@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -20,13 +20,14 @@ export default function XPToast() {
   const translateY = useSharedValue(-90);
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.94);
-  // mantém o valor mesmo durante o fade-out
-  const lastAmount = useRef(0);
+  // Estado (não ref) para o valor exibido: dispara re-render com o número certo
+  // e o mantém visível durante o fade-out (quando xpNotification volta a null).
+  const [displayAmount, setDisplayAmount] = useState(0);
   const exitTimer = useRef(null);
 
   useEffect(() => {
     if (!xpNotification) return;
-    lastAmount.current = xpNotification;
+    setDisplayAmount(xpNotification);
 
     // Háptico leve no momento em que o toast aparece.
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -56,7 +57,7 @@ export default function XPToast() {
     <Animated.View
       pointerEvents="none"
       accessibilityLiveRegion="polite"
-      accessibilityLabel={`Você ganhou ${lastAmount.current} XP`}
+      accessibilityLabel={`Você ganhou ${displayAmount} XP`}
       style={[
         {
           position: 'absolute',
@@ -86,7 +87,7 @@ export default function XPToast() {
       >
         <Text style={{ fontSize: 18, marginRight: 8 }}>⚡</Text>
         <Text style={{ color: 'white', fontWeight: '800', fontSize: 16, letterSpacing: 0.3 }}>
-          +{lastAmount.current} XP
+          +{displayAmount} XP
         </Text>
       </View>
     </Animated.View>

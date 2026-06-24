@@ -132,6 +132,14 @@ export function UserProvider({ children }) {
     setProgress(updated);
   }
 
+  // Recompensa a 1ª mensagem do dia no chat (streak 5 -> 50). Silencioso se já
+  // recompensou hoje.
+  async function awardChatStreakXP() {
+    const { progress: updated, chatXP } = await progressService.applyChatStreak(progress);
+    setProgress(updated);
+    if (chatXP > 0) showXpNotification(chatXP);
+  }
+
   async function addJournalEntry(mood, text) {
     const entry = await journalService.addEntry(mood, text);
     const updated = await progressService.incrementJournalEntries(progress);
@@ -172,6 +180,7 @@ export function UserProvider({ children }) {
     addXP,
     addMoodEntry,
     addChatSession,
+    awardChatStreakXP,
     addJournalEntry,
     getJournalEntries,
     completeChallengeToday,
