@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { Text, TouchableOpacity } from 'react-native';
 
 // Mapa estático de variantes — substitui o className dinâmico (badge.color),
 // que não era resolvido pelo build do NativeWind. Valores dos tokens da Fase 4.
@@ -9,11 +9,13 @@ const VARIANTS = {
 };
 const LOCKED = { bg: '#F4F2EE', text: '#A29D95' }; // stone-100 / stone-400
 
-export default function BadgeCard({ badge, unlocked }) {
+export default function BadgeCard({ badge, unlocked, onPress }) {
   const style = unlocked ? (VARIANTS[badge.variant] || VARIANTS.sage) : LOCKED;
 
   return (
-    <View
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
       style={{
         flex: 1,
         minWidth: 70,
@@ -24,7 +26,9 @@ export default function BadgeCard({ badge, unlocked }) {
         backgroundColor: style.bg,
         opacity: unlocked ? 1 : 0.6,
       }}
-      accessibilityLabel={unlocked ? badge.name : `${badge.name}, ainda não conquistado`}
+      accessibilityRole="button"
+      accessibilityLabel={unlocked ? `${badge.name}, conquistado` : `${badge.name}, ainda não conquistado`}
+      accessibilityHint="Toque para ver a descrição"
     >
       <Text style={{ fontSize: 28, marginBottom: 4, opacity: unlocked ? 1 : 0.45 }}>
         {badge.icon}
@@ -35,6 +39,6 @@ export default function BadgeCard({ badge, unlocked }) {
       >
         {badge.name}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 }

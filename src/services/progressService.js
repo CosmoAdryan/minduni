@@ -54,6 +54,12 @@ export function checkBadges(progress) {
   if (progress.level >= 10) add('level_10');
   if (progress.journalEntries >= 5) add('journal_5');
   if (progress.totalXP >= 1000) add('xp_1000');
+  // Conquistas adicionais
+  if (progress.level >= 3) add('level_3');
+  if ((progress.chatStreak || 0) >= 7) add('chat_streak_7');
+  if (progress.moods && progress.moods.length >= 30) add('mood_30');
+  if (progress.journalEntries >= 15) add('journal_15');
+  if ((progress.daysActive || 0) >= 30) add('active_30');
   return newBadges;
 }
 
@@ -193,6 +199,21 @@ export async function applyChatStreak(currentProgress) {
   updated.unlockedBadges = checkBadges(updated);
   await saveProgress(updated);
   return { progress: updated, chatXP: xp };
+}
+
+// Destrava um badge específico (idempotente). Usado por conquistas cuja
+// condição não depende só de `progress` (ex.: all_challenges, que depende dos
+// challenge_logs do dia).
+export async function unlockBadge(currentProgress, badgeId) {
+  if ((currentProgress.unlockedBadges || []).includes(badgeId)) {
+    return currentProgress;
+  }
+  const updated = {
+    ...currentProgress,
+    unlockedBadges: [...(currentProgress.unlockedBadges || []), badgeId],
+  };
+  await saveProgress(updated);
+  return updated;
 }
 
 export async function incrementJournalEntries(currentProgress) {

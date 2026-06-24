@@ -4,6 +4,7 @@ import * as authService from '../services/authService';
 import * as progressService from '../services/progressService';
 import * as journalService from '../services/journalService';
 import * as challengeService from '../services/challengeService';
+import { getDailyChallenges } from '../data/challenges';
 
 // Re-export LEVELS so existing imports (e.g. XPBar) keep working
 export const LEVELS = progressService.LEVELS;
@@ -153,7 +154,19 @@ export function UserProvider({ children }) {
 
   async function completeChallengeToday(challengeId, xp) {
     await challengeService.markChallengeComplete(challengeId);
-    await addXP(xp);
+    let updated = await progressService.addXP(progress, xp);
+    showXpNotification(xp);
+
+    // Badge "all_challenges": destrava quando os 3 desafios do dia estão
+    // concluídos. A condição depende dos challenge_logs (não de `progress`),
+    // por isso é verificada aqui e não em checkBadges.
+    const daily = getDailyChallenges();
+    const requiredIds = [daily.mindfulness.id, daily.gratitude.id, daily.breathing.id];
+    const done = await challengeService.getCompletedToday();
+    if (requiredIds.every((id) => done.includes(id))) {
+      updated = await progressService.unlockBadge(updated, 'all_challenges');
+    }
+    setProgress(updated);
   }
 
   async function getCompletedChallenges() {
