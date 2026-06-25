@@ -69,7 +69,7 @@ function moodLoggedToday(moods) {
 }
 
 export default function ChatPage() {
-  const { progress, addMoodEntry, awardChatStreakXP, addChatSession } = useUser();
+  const { progress, addMoodEntry, onSageMessageSent } = useUser();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
@@ -157,12 +157,9 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
 
-    // XP da 1ª mensagem do dia (guardado por data internamente).
-    awardChatStreakXP();
-
-    // Badge "first_chat": destrava na primeira mensagem que o usuário envia ao
-    // Sage (chatSessions começa em 0; só incrementa uma vez).
-    if (!progress.chatSessions) addChatSession();
+    // Aplica o streak de mensagem do dia (5->50) e marca a primeira conversa
+    // (badge first_chat). Guardado por data/estado internamente.
+    onSageMessageSent();
 
     if (detectCrisis(text)) setCrisisVisible(true);
 

@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Alert, Modal,
+  View, Text, ScrollView, TouchableOpacity, Alert, Modal, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { LogOut, Flame, Award, Zap, BookOpen, MessageCircle, Calendar, Shield } from 'lucide-react-native';
+import { LogOut, Flame, Award, Zap, BookOpen, MessageCircle, Calendar, Shield, Pencil } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import { BADGES } from '../../src/data/badges';
 import { getUserMessageCount } from '../../src/services/chatService';
@@ -54,10 +54,27 @@ export default function ProfilePage() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
+        {/* Botão de editar perfil */}
+        <View className="flex-row justify-end mb-1">
+          <TouchableOpacity
+            className="flex-row items-center bg-white border border-stone-200 px-3 py-2 rounded-full"
+            onPress={() => router.push('/edit-profile')}
+            accessibilityRole="button"
+            accessibilityLabel="Editar perfil"
+          >
+            <Pencil size={14} color="#3D7A67" style={{ marginRight: 6 }} />
+            <Text style={{ color: '#2D6254' }} className="font-semibold text-sm">Editar</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Avatar */}
         <View className="items-center mb-6">
-          <View className="w-24 h-24 rounded-full bg-sage-500 items-center justify-center mb-3 shadow-md">
-            <Text className="text-white text-3xl font-bold">{initials}</Text>
+          <View className="w-24 h-24 rounded-full bg-sage-500 items-center justify-center mb-3 shadow-md overflow-hidden">
+            {currentUser?.avatarUrl ? (
+              <Image source={{ uri: currentUser.avatarUrl }} style={{ width: '100%', height: '100%' }} />
+            ) : (
+              <Text className="text-white text-3xl font-bold">{initials}</Text>
+            )}
           </View>
           <Text className="text-xl font-bold text-stone-900">{currentUser?.name}</Text>
           <Text className="text-stone-500 text-sm">{currentUser?.email}</Text>
