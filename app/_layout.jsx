@@ -16,6 +16,7 @@ import {
 import { Lora_400Regular_Italic } from '@expo-google-fonts/lora';
 import { hasCompletedOnboarding } from '../src/services/onboardingService';
 import XPToast from '../src/components/XPToast';
+import BadgeToast from '../src/components/BadgeToast';
 
 function AuthGuard() {
   const { currentUser, loading, isRecovering } = useUser();
@@ -33,7 +34,7 @@ function AuthGuard() {
       const inTabs = segments[0] === '(tabs)';
       // Rotas públicas acessíveis em qualquer estado (logado ou não) — não
       // sofrem redirecionamento do guard.
-      const PUBLIC_ROUTES = ['privacy-policy'];
+      const PUBLIC_ROUTES = ['privacy-policy', 'edit-profile'];
       if (PUBLIC_ROUTES.includes(segments[0])) return;
 
       const onboardingDone = await hasCompletedOnboarding();
@@ -78,8 +79,9 @@ export default function RootLayout() {
         <View style={{ flex: 1, opacity: fontsLoaded ? 1 : 0.99 }}>
           <Stack screenOptions={{ headerShown: false }} />
         </View>
-        {/* XP toast overlay — visível em todas as telas, dentro do UserProvider */}
+        {/* Toasts globais — visíveis em todas as telas, dentro do UserProvider */}
         <XPToast />
+        <BadgeToast />
       </UserProvider>
     </SafeAreaProvider>
   );

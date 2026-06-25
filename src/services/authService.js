@@ -15,7 +15,7 @@ export async function register(name, email, password) {
     .insert({ id: user.id, name, consent_given_at: consentAt, consent_version: CONSENT_VERSION });
   if (profileError) throw new Error(profileError.message);
 
-  return { id: user.id, name, email, createdAt: user.created_at };
+  return { id: user.id, name, email, avatarUrl: null, createdAt: user.created_at };
 }
 
 export async function login(email, password) {
@@ -25,7 +25,7 @@ export async function login(email, password) {
   const user = data.user;
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name')
+    .select('name, avatar_url')
     .eq('id', user.id)
     .single();
 
@@ -33,6 +33,7 @@ export async function login(email, password) {
     id: user.id,
     name: profile?.name ?? '',
     email: user.email,
+    avatarUrl: profile?.avatar_url ?? null,
     createdAt: user.created_at,
   };
 }
@@ -74,7 +75,7 @@ export async function getCurrentUser() {
   const user = session.user;
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name')
+    .select('name, avatar_url')
     .eq('id', user.id)
     .single();
 
@@ -82,6 +83,7 @@ export async function getCurrentUser() {
     id: user.id,
     name: profile?.name ?? '',
     email: user.email,
+    avatarUrl: profile?.avatar_url ?? null,
     createdAt: user.created_at,
   };
 }

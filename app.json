@@ -24,7 +24,13 @@
       "bundleIdentifier": "com.minduni.app"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O MindUni usa suas fotos para você definir sua imagem de perfil."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
