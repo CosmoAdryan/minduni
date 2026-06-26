@@ -2,6 +2,7 @@
   "expo": {
     "name": "MindUni",
     "slug": "minduni",
+    "owner": "cosmo-adryan",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -19,7 +20,10 @@
         "backgroundColor": "#3D7A67"
       },
       "package": "com.minduni.app",
-      "versionCode": 1
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "ios": {
       "bundleIdentifier": "com.minduni.app"
@@ -35,6 +39,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "84eccce3-05e0-42b9-b4a7-9884dc2ae84d"
+      }
     }
   }
 }
