@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Brain, MessageCircle, Target, Shield, Lock, CheckSquare, Square } from 'lucide-react-native';
@@ -74,20 +74,26 @@ export default function Onboarding() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-      {/* "Pular" leva direto ao consentimento — a parte informativa pode ser
-          pulada, mas o aceite LGPD é obrigatório. */}
-      {!isLast ? (
-        <TouchableOpacity
-          style={{ alignSelf: 'flex-end', padding: 16 }}
-          onPress={() => goToSlide(SLIDES.length - 1)}
-          accessibilityLabel="Pular apresentação e ir para o consentimento"
-          accessibilityRole="button"
-        >
-          <Text style={{ color: '#A29D95', fontWeight: '600', fontSize: 14 }}>Pular</Text>
-        </TouchableOpacity>
-      ) : (
-        <View style={{ height: 48 }} />
-      )}
+      {/* Marca do app + "Pular". A parte informativa pode ser pulada, mas o
+          aceite LGPD (último slide) é obrigatório. */}
+      <View style={{ height: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 }}>
+        <Image
+          source={require('../../assets/logo.png')}
+          style={{ width: 30, height: 30, marginRight: 8 }}
+          resizeMode="contain"
+        />
+        <Text style={{ fontSize: 18, fontWeight: '800', color: '#1C1917' }}>MindUni</Text>
+        {!isLast && (
+          <TouchableOpacity
+            style={{ position: 'absolute', right: 16, padding: 4 }}
+            onPress={() => goToSlide(SLIDES.length - 1)}
+            accessibilityLabel="Pular apresentação e ir para o consentimento"
+            accessibilityRole="button"
+          >
+            <Text style={{ color: '#A29D95', fontWeight: '600', fontSize: 14 }}>Pular</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Slides */}
       <ScrollView

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList,
-  KeyboardAvoidingView, ActivityIndicator,
+  KeyboardAvoidingView, ActivityIndicator, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Send, AlertCircle, X } from 'lucide-react-native';
@@ -192,8 +192,8 @@ export default function ChatPage() {
         {/* Header */}
         <View className="bg-white px-4 py-3 flex-row items-center justify-between border-b border-stone-200 shadow-sm">
           <View className="flex-row items-center">
-            <View className="w-10 h-10 rounded-full bg-sage-100 items-center justify-center mr-3">
-              <Text style={{ fontSize: 20 }}>🌿</Text>
+            <View className="w-10 h-10 rounded-full bg-white border border-stone-200 items-center justify-center mr-3 overflow-hidden">
+              <Image source={require('../../assets/logo.png')} style={{ width: 34, height: 34 }} resizeMode="contain" />
             </View>
             <View>
               <Text className="font-bold text-stone-900">Sage</Text>
