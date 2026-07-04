@@ -271,11 +271,16 @@ Todas as tabelas usam uma policy `FOR ALL` com `auth.uid() = user_id` (ou `= id`
 
 ## 9. Pendências e próximos passos sugeridos
 
-- [ ] Ativar Leaked Password Protection no Supabase (segurança).
+- [ ] Ativar Leaked Password Protection no Supabase (segurança). **Passo manual**: só pode ser
+      feito no Dashboard (a Management API exige token com acesso ao projeto, que a CLI local não
+      tem): Dashboard → Authentication → Sign In / Providers → Passwords → habilitar
+      *"Prevent use of leaked passwords"* (checa contra HaveIBeenPwned). Aproveitar e subir o
+      mínimo de senha para 8 caracteres (hoje 6) — se subir, ajustar também a validação em
+      `accountService.changePassword` e nas telas de cadastro/reset.
 - [ ] Criar suíte de **testes automatizados** (lógica de XP/streak/badges — hoje há zero testes próprios).
 - [ ] Análise heurística de **usabilidade** (Nielsen) e acessibilidade.
 - [ ] Considerar reverter `GEMINI_MODEL` para `gemini-2.5-flash` ao ligar billing (hoje em modelo *preview* por cota).
-- [ ] Merge da `chore/upgrade-expo-54` em `main` quando estabilizada.
+- [x] Merge da `chore/upgrade-expo-54` em `main` quando estabilizada. *(feito em 2026-07-03; correções de segurança seguem na branch `fix/hardening-seguranca`)*
 
 ---
 

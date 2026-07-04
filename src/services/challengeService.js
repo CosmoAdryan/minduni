@@ -48,14 +48,6 @@ export async function getWeeklyCompletion() {
   return results;
 }
 
-export async function markChallengeComplete(challengeId) {
-  const userId = await getCurrentUserId();
-  const today = toISODate(new Date());
-
-  await supabase
-    .from('challenge_logs')
-    .upsert(
-      { user_id: userId, challenge_id: challengeId, completed_date: today },
-      { onConflict: 'user_id,challenge_id,completed_date' },
-    );
-}
+// A conclusão de desafios agora é feita pela RPC gam_complete_challenge
+// (via progressService.completeChallenge): o servidor valida o ID, define o
+// XP e grava o log — o INSERT direto em challenge_logs foi revogado.

@@ -372,7 +372,8 @@ export default function ChallengesPage() {
   }
 
   async function handleComplete(challenge) {
-    await completeChallengeToday(challenge.id, challenge.xp);
+    // O XP do desafio é definido no servidor a partir do ID.
+    await completeChallengeToday(challenge.id);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setActive(null);
     loadData();
