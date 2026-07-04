@@ -165,8 +165,12 @@ serve(async (req) => {
     // ── INTRO FLOW ─────────────────────────────────────────────────────────────
     // Saudação de abertura (só para conversa nova, sem histórico).
     if (intro) {
-      const moodLabel = mood ? MOOD_LABELS[mood] ?? 'não informado' : 'não informado';
-      const introPrompt = `O usuário está iniciando a conversa e indicou estar se sentindo ${moodLabel} hoje. Gere uma saudação inicial acolhedora e empática, breve (máximo 2 parágrafos curtos), terminando com uma única pergunta aberta que o convide a falar mais.`;
+      const moodLabel = mood ? MOOD_LABELS[mood] ?? null : null;
+      // Sem humor informado: saudação GERAL, sem presumir nenhum sentimento.
+      // Com humor: saudação específica que reconhece o estado com leveza.
+      const introPrompt = moodLabel
+        ? `O usuário está abrindo a conversa e indicou estar se sentindo ${moodLabel} hoje. Gere uma saudação inicial acolhedora e empática, breve (máximo 2 parágrafos curtos), reconhecendo com leveza como ele se sente (sem rotular nem dramatizar) e terminando com UMA única pergunta aberta que o convide a falar mais.`
+        : `O usuário está abrindo a conversa pela primeira vez e AINDA NÃO disse como se sente. Gere uma saudação inicial calorosa e acolhedora, breve (máximo 2 parágrafos curtos), apresentando-se como um espaço seguro de apoio. NÃO presuma nem mencione nenhum sentimento ou estado emocional do usuário. Termine com UMA única pergunta aberta e simples, do tipo "como você está se sentindo hoje?", convidando-o a contar como está.`;
 
       const geminiRes = await fetch(geminiUrl(), {
         method: 'POST',

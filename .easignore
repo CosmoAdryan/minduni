@@ -1,0 +1,41 @@
+# Define o que NÃO é enviado ao serviço de build da Expo (EAS).
+# Substitui o .gitignore só para o upload do EAS — usado aqui para PERMITIR o
+# envio do .env (que continua fora do GitHub) e dar as chaves EXPO_PUBLIC_* à
+# build na nuvem.
+
+# Dependências
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Build outputs nativos (EAS gera na nuvem)
+android/
+ios/
+
+# Ferramentas e materiais locais
+.claude/
+.mcp.json
+.agents/
+skills-lock.json
+ARTIGO_TECNICO.md
+design_handoff_minduni_fase4/
+
+# OBS: .env NÃO está listado aqui de propósito, para ser enviado ao EAS.

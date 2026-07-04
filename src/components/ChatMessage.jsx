@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -62,8 +62,8 @@ export function ChatMessage({ message }) {
   return (
     <View className="items-start mb-3">
       <View className="flex-row items-end">
-        <View className="w-8 h-8 rounded-full bg-sage-100 items-center justify-center mr-2 mb-1">
-          <Text style={{ fontSize: 16 }}>🌿</Text>
+        <View className="w-8 h-8 rounded-full bg-white border border-stone-200 items-center justify-center mr-2 mb-1 overflow-hidden">
+          <Image source={require('../../assets/logo.png')} style={{ width: 28, height: 28 }} resizeMode="contain" />
         </View>
         <View>
           <View className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 max-w-xs shadow-sm">
@@ -91,8 +91,8 @@ export function TypingIndicator() {
       className="items-start mb-3"
     >
       <View className="flex-row items-end">
-        <View className="w-8 h-8 rounded-full bg-sage-100 items-center justify-center mr-2 mb-1">
-          <Text style={{ fontSize: 16 }}>🌿</Text>
+        <View className="w-8 h-8 rounded-full bg-white border border-stone-200 items-center justify-center mr-2 mb-1 overflow-hidden">
+          <Image source={require('../../assets/logo.png')} style={{ width: 28, height: 28 }} resizeMode="contain" />
         </View>
         <View
           className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex-row items-center"
