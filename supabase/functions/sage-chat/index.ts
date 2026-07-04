@@ -54,6 +54,44 @@ function detectCrisis(message: string): boolean {
 // A cada quantas mensagens do usuário o resumo rolante é regenerado.
 const SUMMARY_EVERY_N_USER_MSGS = 8;
 
+// Limites de entrada — o corpo vem do cliente e não é confiável.
+const MAX_MESSAGE_CHARS = 2000;
+const MAX_HISTORY_ITEMS = 12;
+
+// Rate limit por usuário, medido nas linhas de chat_messages (usuário + modelo).
+// Uso normal fica muito abaixo; o teto protege a cota do Gemini e o banco.
+const RATE_LIMIT_ROWS_PER_MIN = 20;
+const RATE_LIMIT_ROWS_PER_DAY = 400;
+
+// True se o usuário estourou o teto de mensagens (últimos 60s ou 24h).
+async function isRateLimited(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<boolean> {
+  const minuteAgo = new Date(Date.now() - 60_000).toISOString();
+  const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
+  const [{ count: perMin }, { count: perDay }] = await Promise.all([
+    supabase
+      .from('chat_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gt('created_at', minuteAgo),
+    supabase
+      .from('chat_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gt('created_at', dayAgo),
+  ]);
+  return (perMin ?? 0) >= RATE_LIMIT_ROWS_PER_MIN || (perDay ?? 0) >= RATE_LIMIT_ROWS_PER_DAY;
+}
+
+function rateLimitResponse() {
+  return new Response(
+    JSON.stringify({ error: 'Você enviou muitas mensagens em pouco tempo. Aguarde um pouco e tente de novo.' }),
+    { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  );
+}
+
 function geminiUrl(): string {
   const key = Deno.env.get('GEMINI_API_KEY');
   return `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
@@ -153,7 +191,37 @@ serve(async (req) => {
     }
     const userId = user.id;
 
-    const { session_id, message, history, intro, mood } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      return new Response(JSON.stringify({ error: 'Corpo inválido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { session_id, message, history, intro } = body;
+    // Humor: só aceita inteiro 1–5; qualquer outra coisa vira null.
+    const mood = Number.isInteger(body.mood) && body.mood >= 1 && body.mood <= 5 ? body.mood : null;
+
+    // A sessão precisa existir E pertencer ao usuário. A consulta usa o client
+    // com o JWT do usuário, então a RLS só enxerga as sessões dele — session_id
+    // de outra pessoa retorna vazio. De quebra já traz o resumo rolante.
+    if (typeof session_id !== 'string' || !session_id) {
+      return new Response(JSON.stringify({ error: 'Sessão inválida' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { data: sessionRow } = await supabase
+      .from('chat_sessions')
+      .select('id, summary, summarized_until')
+      .eq('id', session_id)
+      .maybeSingle();
+    if (!sessionRow) {
+      return new Response(JSON.stringify({ error: 'Conversa não encontrada' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Humor opcional do check-in diário. Mantém o Sage coerente com o estado
     // real do usuário (sem presumir sobrecarga).
@@ -165,6 +233,20 @@ serve(async (req) => {
     // ── INTRO FLOW ─────────────────────────────────────────────────────────────
     // Saudação de abertura (só para conversa nova, sem histórico).
     if (intro) {
+      // A saudação só vale para conversa vazia — impede repetir a chamada ao
+      // Gemini à vontade reaproveitando o mesmo session_id.
+      const { count: existingCount } = await supabase
+        .from('chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('session_id', session_id);
+      if ((existingCount ?? 0) > 0) {
+        return new Response(JSON.stringify({ error: 'A conversa já foi iniciada' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (await isRateLimited(supabase, userId)) return rateLimitResponse();
+
       const moodLabel = mood ? MOOD_LABELS[mood] ?? null : null;
       // Sem humor informado: saudação GERAL, sem presumir nenhum sentimento.
       // Com humor: saudação específica que reconhece o estado com leveza.
@@ -204,8 +286,22 @@ serve(async (req) => {
     }
     // ── END INTRO FLOW ─────────────────────────────────────────────────────────
 
+    if (typeof message !== 'string' || !message.trim()) {
+      return new Response(JSON.stringify({ error: 'Mensagem inválida' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (message.length > MAX_MESSAGE_CHARS) {
+      return new Response(
+        JSON.stringify({ error: 'A mensagem é muito longa. Tente dividir em partes menores.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     // Crise é detectada no servidor também. Respostas de crise são sempre
-    // respondidas e nunca passam pelo modelo.
+    // respondidas e nunca passam pelo modelo — por isso ficam ANTES do rate
+    // limit: quem precisa do CVV nunca pode ser bloqueado.
     if (detectCrisis(message)) {
       await supabase.from('chat_messages').insert({
         session_id,
@@ -226,6 +322,8 @@ serve(async (req) => {
       );
     }
 
+    if (await isRateLimited(supabase, userId)) return rateLimitResponse();
+
     // Save user message
     await supabase.from('chat_messages').insert({
       session_id,
@@ -234,22 +332,22 @@ serve(async (req) => {
       content: message,
     });
 
-    // Resumo rolante da sessão — memória de longo prazo injetada no system prompt.
-    const { data: sessionRow } = await supabase
-      .from('chat_sessions')
-      .select('summary, summarized_until')
-      .eq('id', session_id)
-      .single();
+    // Resumo rolante da sessão (já carregado na verificação de posse) —
+    // memória de longo prazo injetada no system prompt.
     const sessionSummary: string | null = sessionRow?.summary ?? null;
     const summaryContext = sessionSummary
       ? `\n\nRESUMO DO QUE JÁ CONVERSARAM (use para manter continuidade; não repita de volta literalmente): ${sessionSummary}`
       : '';
 
     // Build Gemini history — Gemini requires contents to start with 'user'.
-    const mapped = (history ?? [])
+    // O history vem do cliente: limita a quantidade de itens e o tamanho de
+    // cada um antes de montar o prompt (contém o custo e o abuso).
+    const mapped = (Array.isArray(history) ? history : [])
+      .filter((msg: { role?: unknown; content?: unknown }) => typeof msg?.content === 'string')
+      .slice(-MAX_HISTORY_ITEMS)
       .map((msg: { role: string; content: string }) => ({
         role: msg.role === 'sage' ? 'model' : 'user',
-        parts: [{ text: msg.content }],
+        parts: [{ text: msg.content.slice(0, MAX_MESSAGE_CHARS) }],
       }));
 
     // Merge consecutive same-role turns. The client splits a single reply into
