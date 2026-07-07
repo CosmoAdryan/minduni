@@ -74,7 +74,7 @@ export default function EditProfilePage() {
   async function handleChangePassword() {
     setPwdError('');
     if (!currentPassword) { setPwdError('Informe sua senha atual.'); return; }
-    if (newPassword.length < 6) { setPwdError('A nova senha deve ter pelo menos 6 caracteres.'); return; }
+    if (newPassword.length < 8) { setPwdError('A nova senha deve ter pelo menos 8 caracteres.'); return; }
     if (newPassword !== confirmPassword) { setPwdError('As senhas não coincidem.'); return; }
 
     setPwdLoading(true);
@@ -252,7 +252,7 @@ export default function EditProfilePage() {
             </View>
             <TextInput
               className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900 mb-3"
-              placeholder="Nova senha (mín. 6 caracteres)"
+              placeholder="Nova senha (mín. 8 caracteres)"
               value={newPassword}
               onChangeText={setNewPassword}
               secureTextEntry={!showPassword}

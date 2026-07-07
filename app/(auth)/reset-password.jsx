@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
     if (!email.trim()) { setError('Informe o email da sua conta'); return; }
     if (!code.trim()) { setError('Informe o código recebido por email'); return; }
     if (!password || !confirm) { setError('Preencha a nova senha'); return; }
-    if (password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres'); return; }
+    if (password.length < 8) { setError('A senha deve ter pelo menos 8 caracteres'); return; }
     if (password !== confirm) { setError('As senhas não coincidem'); return; }
 
     setLoading(true);
@@ -132,7 +132,7 @@ export default function ResetPasswordPage() {
               <View className="flex-row items-center bg-stone-100 border border-stone-200 rounded-xl">
                 <TextInput
                   className="flex-1 px-4 py-3 text-stone-900"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}

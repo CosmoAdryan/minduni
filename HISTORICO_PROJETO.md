@@ -271,12 +271,14 @@ Todas as tabelas usam uma policy `FOR ALL` com `auth.uid() = user_id` (ou `= id`
 
 ## 9. Pendências e próximos passos sugeridos
 
-- [ ] Ativar Leaked Password Protection no Supabase (segurança). **Passo manual**: só pode ser
-      feito no Dashboard (a Management API exige token com acesso ao projeto, que a CLI local não
-      tem): Dashboard → Authentication → Sign In / Providers → Passwords → habilitar
-      *"Prevent use of leaked passwords"* (checa contra HaveIBeenPwned). Aproveitar e subir o
-      mínimo de senha para 8 caracteres (hoje 6) — se subir, ajustar também a validação em
-      `accountService.changePassword` e nas telas de cadastro/reset.
+- [ ] Ativar Leaked Password Protection no Supabase (segurança). **Bloqueado no plano Free**
+      *(verificado em 2026-07-06)*: o recurso *"Prevent use of leaked passwords"* (checagem
+      contra HaveIBeenPwned) só está disponível no plano **Pro**. Reavaliar se o projeto migrar
+      de plano: Dashboard → Authentication → Sign In / Providers → Passwords.
+- [x] Subir o mínimo de senha para **8 caracteres**. *(feito em 2026-07-06: alterado no
+      Dashboard do Supabase e nas validações do app — `accountService.changePassword`,
+      cadastro em `login.jsx` (apenas no registro, para não travar login de contas antigas),
+      `reset-password.jsx` e `edit-profile.jsx`.)*
 - [x] Criar suíte de **testes automatizados**. *(feito em 2026-07-03: jest-expo com 42 testes — detecção de crise, níveis/XP e contrato das RPCs de gamificação; rodar com `npm test`. A lógica autoritativa de XP/streak/badges migrou para o Postgres — migration `server_side_gamification`.)*
 - [ ] Análise heurística de **usabilidade** (Nielsen) e acessibilidade.
 - [ ] Considerar reverter `GEMINI_MODEL` para `gemini-2.5-flash` ao ligar billing (hoje em modelo *preview* por cota).

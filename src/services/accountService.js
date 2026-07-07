@@ -72,8 +72,8 @@ export async function uploadAvatar(asset) {
 // Altera a senha do usuário logado. Confirma a senha atual reautenticando
 // antes de definir a nova (evita troca indevida com sessão aberta).
 export async function changePassword(currentPassword, newPassword) {
-  if (!newPassword || newPassword.length < 6) {
-    throw new Error('A nova senha deve ter pelo menos 6 caracteres.');
+  if (!newPassword || newPassword.length < 8) {
+    throw new Error('A nova senha deve ter pelo menos 8 caracteres.');
   }
   const user = await getCurrentUser();
 
