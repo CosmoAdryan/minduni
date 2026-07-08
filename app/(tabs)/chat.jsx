@@ -267,6 +267,7 @@ export default function ChatPage() {
           <TextInput
             className="flex-1 bg-stone-100 border border-stone-200 rounded-2xl px-4 py-3 mr-3 text-stone-900 max-h-28"
             placeholder="Digite sua mensagem..."
+            placeholderTextColor="#A29D95"
             value={input}
             onChangeText={setInput}
             multiline

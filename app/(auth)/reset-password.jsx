@@ -107,6 +107,7 @@ export default function ResetPasswordPage() {
               <TextInput
                 className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
                 placeholder="seu@email.com"
+                placeholderTextColor="#A29D95"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -120,6 +121,7 @@ export default function ResetPasswordPage() {
               <TextInput
                 className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900 tracking-[4px] text-center text-lg"
                 placeholder="00000000"
+                placeholderTextColor="#A29D95"
                 value={code}
                 onChangeText={(t) => setCode(t.replace(/[^0-9]/g, '').slice(0, 8))}
                 keyboardType="number-pad"
@@ -133,6 +135,7 @@ export default function ResetPasswordPage() {
                 <TextInput
                   className="flex-1 px-4 py-3 text-stone-900"
                   placeholder="Mínimo 8 caracteres"
+                  placeholderTextColor="#A29D95"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -157,6 +160,7 @@ export default function ResetPasswordPage() {
               <TextInput
                 className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
                 placeholder="Repita a nova senha"
+                placeholderTextColor="#A29D95"
                 value={confirm}
                 onChangeText={setConfirm}
                 secureTextEntry={!showPassword}

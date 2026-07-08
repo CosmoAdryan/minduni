@@ -69,6 +69,7 @@ export default function LoginPage() {
                 <TextInput
                   className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
                   placeholder="Seu nome"
+                  placeholderTextColor="#A29D95"
                   value={name}
                   onChangeText={setName}
                   autoCapitalize="words"
@@ -81,6 +82,7 @@ export default function LoginPage() {
               <TextInput
                 className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
                 placeholder="seu@email.com"
+                placeholderTextColor="#A29D95"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -94,6 +96,7 @@ export default function LoginPage() {
                 <TextInput
                   className="flex-1 px-4 py-3 text-stone-900"
                   placeholder={isRegister ? 'Mínimo 8 caracteres' : 'Sua senha'}
+                  placeholderTextColor="#A29D95"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}

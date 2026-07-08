@@ -124,6 +124,7 @@ export default function JournalPage() {
           <TextInput
             className="bg-stone-100 border border-stone-200 rounded-xl p-3 text-stone-900 min-h-28"
             placeholder="Escreva livremente sobre como está se sentindo..."
+            placeholderTextColor="#A29D95"
             value={text}
             onChangeText={(t) => setText(t.slice(0, 1000))}
             multiline
@@ -194,6 +195,7 @@ export default function JournalPage() {
               <TextInput
                 style={{ flex: 1, fontSize: 14, color: '#1C1917' }}
                 placeholder="Buscar no diário..."
+                placeholderTextColor="#A29D95"
                 value={searchText}
                 onChangeText={setSearchText}
                 accessibilityLabel="Buscar entradas do diário"
