@@ -33,9 +33,14 @@ export function UserProvider({ children }) {
   }
 
   useEffect(() => {
-    // Restore session on app launch and listen for auth changes
+    // Restore session on app launch and listen for auth changes.
+    // O callback é síncrono e barato de propósito: await de chamadas ao
+    // Supabase aqui dentro segura o lock de auth do supabase-js e trava a
+    // inicialização (splash longo no 1º cold start). O usuário é montado na
+    // hora a partir da sessão local (AsyncStorage, sem rede) para destravar a
+    // navegação; perfil e progresso chegam em segundo plano.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         // Durante a recuperação de senha a sessão (temporária) é criada pelo
         // handler de deep link. Não entramos na área autenticada: deixamos o
         // usuário na tela de redefinição.
@@ -44,21 +49,37 @@ export function UserProvider({ children }) {
           return;
         }
         if (session?.user) {
-          try {
-            const [user, prog] = await Promise.all([
-              authService.getCurrentUser(),
-              progressService.getProgress(),
-            ]);
-            if (user) setCurrentUser(user);
-            setProgress(prog || { ...progressService.INITIAL_PROGRESS });
-          } catch (e) {
-            console.error('Session restore error', e);
+          const { user } = session;
+          setCurrentUser((u) => u ?? {
+            id: user.id,
+            name: '',
+            email: user.email,
+            avatarUrl: null,
+            createdAt: user.created_at,
+          });
+          setLoading(false);
+          // Busca em segundo plano só na restauração do cold start. No
+          // SIGNED_IN quem carrega perfil/progresso são login()/register()
+          // (buscar aqui também criaria corrida com o applyLogin do login).
+          if (event === 'INITIAL_SESSION') {
+            setTimeout(async () => {
+              try {
+                const [fullUser, prog] = await Promise.all([
+                  authService.getCurrentUser(),
+                  progressService.getProgress(),
+                ]);
+                if (fullUser) setCurrentUser(fullUser);
+                if (prog) setProgress(prog);
+              } catch (e) {
+                console.error('Session restore error', e);
+              }
+            }, 0);
           }
         } else {
           setCurrentUser(null);
           setProgress(progressService.INITIAL_PROGRESS);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
