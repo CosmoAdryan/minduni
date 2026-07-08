@@ -183,6 +183,7 @@ function GratitudeChallenge({ challenge, onComplete, onClose }) {
             <TextInput
               className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-stone-900 min-h-16"
               placeholder="Escreva aqui..."
+              placeholderTextColor="#A29D95"
               value={answers[i]}
               onChangeText={(t) => {
                 const updated = [...answers];
@@ -372,7 +373,8 @@ export default function ChallengesPage() {
   }
 
   async function handleComplete(challenge) {
-    await completeChallengeToday(challenge.id, challenge.xp);
+    // O XP do desafio é definido no servidor a partir do ID.
+    await completeChallengeToday(challenge.id);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setActive(null);
     loadData();

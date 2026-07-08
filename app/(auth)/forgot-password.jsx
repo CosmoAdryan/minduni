@@ -72,6 +72,7 @@ export default function ForgotPasswordPage() {
               <TextInput
                 className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
                 placeholder="seu@email.com"
+                placeholderTextColor="#A29D95"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"

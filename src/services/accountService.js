@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
-import { INITIAL_PROGRESS, saveProgress } from './progressService';
+import { resetProgress } from './progressService';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -72,8 +72,8 @@ export async function uploadAvatar(asset) {
 // Altera a senha do usuário logado. Confirma a senha atual reautenticando
 // antes de definir a nova (evita troca indevida com sessão aberta).
 export async function changePassword(currentPassword, newPassword) {
-  if (!newPassword || newPassword.length < 6) {
-    throw new Error('A nova senha deve ter pelo menos 6 caracteres.');
+  if (!newPassword || newPassword.length < 8) {
+    throw new Error('A nova senha deve ter pelo menos 8 caracteres.');
   }
   const user = await getCurrentUser();
 
@@ -107,8 +107,9 @@ export async function clearUserData() {
   const { error: sessErr } = await supabase.from('chat_sessions').delete().eq('user_id', uid);
   if (sessErr) throw new Error(sessErr.message);
 
-  // Zera o progresso para o estado inicial.
-  await saveProgress({ ...INITIAL_PROGRESS, lastLogin: new Date().toDateString() });
+  // Zera o progresso no servidor (RPC gam_reset_progress) e devolve o estado
+  // inicial para a UI.
+  return resetProgress();
 }
 
 // Exclui definitivamente a conta (auth + todos os dados via cascade) através da

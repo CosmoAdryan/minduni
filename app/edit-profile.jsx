@@ -74,7 +74,7 @@ export default function EditProfilePage() {
   async function handleChangePassword() {
     setPwdError('');
     if (!currentPassword) { setPwdError('Informe sua senha atual.'); return; }
-    if (newPassword.length < 6) { setPwdError('A nova senha deve ter pelo menos 6 caracteres.'); return; }
+    if (newPassword.length < 8) { setPwdError('A nova senha deve ter pelo menos 8 caracteres.'); return; }
     if (newPassword !== confirmPassword) { setPwdError('As senhas não coincidem.'); return; }
 
     setPwdLoading(true);
@@ -205,6 +205,7 @@ export default function EditProfilePage() {
             <TextInput
               className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
               placeholder="Seu nome"
+              placeholderTextColor="#A29D95"
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -237,6 +238,7 @@ export default function EditProfilePage() {
               <TextInput
                 className="flex-1 px-3 py-3 text-stone-900"
                 placeholder="Senha atual"
+                placeholderTextColor="#A29D95"
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
                 secureTextEntry={!showPassword}
@@ -252,7 +254,8 @@ export default function EditProfilePage() {
             </View>
             <TextInput
               className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900 mb-3"
-              placeholder="Nova senha (mín. 6 caracteres)"
+              placeholder="Nova senha (mín. 8 caracteres)"
+              placeholderTextColor="#A29D95"
               value={newPassword}
               onChangeText={setNewPassword}
               secureTextEntry={!showPassword}
@@ -261,6 +264,7 @@ export default function EditProfilePage() {
             <TextInput
               className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
               placeholder="Confirmar nova senha"
+              placeholderTextColor="#A29D95"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showPassword}

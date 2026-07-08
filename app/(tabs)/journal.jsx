@@ -21,7 +21,7 @@ const MOODS = [
 const MOOD_COLORS = ['#3B6FAB', '#6B8FAB', '#888787', '#5E9B84', '#C9963A'];
 
 export default function JournalPage() {
-  const { addJournalEntry, getJournalEntries, addXP } = useUser();
+  const { addJournalEntry, getJournalEntries } = useUser();
   const [selectedMood, setSelectedMood] = useState(null);
   const [text, setText] = useState('');
   const [entries, setEntries] = useState([]);
@@ -54,9 +54,9 @@ export default function JournalPage() {
     if (!selectedMood || !text.trim()) return;
     setSaving(true);
     try {
+      // O +20 XP é aplicado no servidor junto com a entrada e comunicado pelo
+      // XPToast global (evita aviso duplicado).
       await addJournalEntry(selectedMood, text.trim());
-      // O ganho de XP é comunicado pelo XPToast global (evita aviso duplicado).
-      await addXP(20);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSelectedMood(null);
       setText('');
@@ -124,6 +124,7 @@ export default function JournalPage() {
           <TextInput
             className="bg-stone-100 border border-stone-200 rounded-xl p-3 text-stone-900 min-h-28"
             placeholder="Escreva livremente sobre como está se sentindo..."
+            placeholderTextColor="#A29D95"
             value={text}
             onChangeText={(t) => setText(t.slice(0, 1000))}
             multiline
@@ -194,6 +195,7 @@ export default function JournalPage() {
               <TextInput
                 style={{ flex: 1, fontSize: 14, color: '#1C1917' }}
                 placeholder="Buscar no diário..."
+                placeholderTextColor="#A29D95"
                 value={searchText}
                 onChangeText={setSearchText}
                 accessibilityLabel="Buscar entradas do diário"

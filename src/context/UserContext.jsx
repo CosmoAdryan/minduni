@@ -5,7 +5,6 @@ import * as accountService from '../services/accountService';
 import * as progressService from '../services/progressService';
 import * as journalService from '../services/journalService';
 import * as challengeService from '../services/challengeService';
-import { getDailyChallenges } from '../data/challenges';
 import { BADGES } from '../data/badges';
 
 // Re-export LEVELS so existing imports (e.g. XPBar) keep working
@@ -34,9 +33,14 @@ export function UserProvider({ children }) {
   }
 
   useEffect(() => {
-    // Restore session on app launch and listen for auth changes
+    // Restore session on app launch and listen for auth changes.
+    // O callback é síncrono e barato de propósito: await de chamadas ao
+    // Supabase aqui dentro segura o lock de auth do supabase-js e trava a
+    // inicialização (splash longo no 1º cold start). O usuário é montado na
+    // hora a partir da sessão local (AsyncStorage, sem rede) para destravar a
+    // navegação; perfil e progresso chegam em segundo plano.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         // Durante a recuperação de senha a sessão (temporária) é criada pelo
         // handler de deep link. Não entramos na área autenticada: deixamos o
         // usuário na tela de redefinição.
@@ -45,21 +49,37 @@ export function UserProvider({ children }) {
           return;
         }
         if (session?.user) {
-          try {
-            const [user, prog] = await Promise.all([
-              authService.getCurrentUser(),
-              progressService.getProgress(),
-            ]);
-            if (user) setCurrentUser(user);
-            setProgress(prog || { ...progressService.INITIAL_PROGRESS });
-          } catch (e) {
-            console.error('Session restore error', e);
+          const { user } = session;
+          setCurrentUser((u) => u ?? {
+            id: user.id,
+            name: '',
+            email: user.email,
+            avatarUrl: null,
+            createdAt: user.created_at,
+          });
+          setLoading(false);
+          // Busca em segundo plano só na restauração do cold start. No
+          // SIGNED_IN quem carrega perfil/progresso são login()/register()
+          // (buscar aqui também criaria corrida com o applyLogin do login).
+          if (event === 'INITIAL_SESSION') {
+            setTimeout(async () => {
+              try {
+                const [fullUser, prog] = await Promise.all([
+                  authService.getCurrentUser(),
+                  progressService.getProgress(),
+                ]);
+                if (fullUser) setCurrentUser(fullUser);
+                if (prog) setProgress(prog);
+              } catch (e) {
+                console.error('Session restore error', e);
+              }
+            }, 0);
           }
         } else {
           setCurrentUser(null);
           setProgress(progressService.INITIAL_PROGRESS);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
@@ -93,8 +113,9 @@ export function UserProvider({ children }) {
 
   async function register(name, email, password) {
     const user = await authService.register(name, email, password);
-    const newProgress = { ...progressService.INITIAL_PROGRESS, lastLogin: new Date().toDateString() };
-    await progressService.saveProgress(newProgress);
+    // A linha de progresso é criada pelo trigger handle_new_user; o reset via
+    // RPC garante o estado inicial com last_login = hoje (sem +10 XP no dia).
+    const newProgress = await progressService.resetProgress();
     setCurrentUser(user);
     setProgress(newProgress);
     return user;
@@ -102,8 +123,7 @@ export function UserProvider({ children }) {
 
   async function login(email, password) {
     const user = await authService.login(email, password);
-    const saved = await progressService.getProgress();
-    const { progress: updated, loginXP } = await progressService.applyLogin(saved);
+    const { progress: updated, loginXP } = await progressService.applyLogin();
     setCurrentUser(user);
     setProgress(updated);
     if (loginXP > 0) showXpNotification(loginXP);
@@ -157,10 +177,10 @@ export function UserProvider({ children }) {
     await accountService.changePassword(currentPassword, newPassword);
   }
 
-  // Limpa dados de uso, mantendo a conta. Reseta o progresso em memória.
+  // Limpa dados de uso, mantendo a conta. O reset acontece no servidor.
   async function clearData() {
-    await accountService.clearUserData();
-    setProgress({ ...progressService.INITIAL_PROGRESS, lastLogin: new Date().toDateString() });
+    const fresh = await accountService.clearUserData();
+    setProgress(fresh ?? { ...progressService.INITIAL_PROGRESS });
   }
 
   // Exclui a conta definitivamente e limpa o estado local (volta ao login).
@@ -173,38 +193,19 @@ export function UserProvider({ children }) {
     setProgress(progressService.INITIAL_PROGRESS);
   }
 
-  async function addXP(amount) {
-    const prevBadges = progress.unlockedBadges;
-    const updated = await progressService.addXP(progress, amount);
-    setProgress(updated);
-    showXpNotification(amount);
-    notifyNewBadges(prevBadges, updated.unlockedBadges);
-  }
-
   async function addMoodEntry(mood, phase) {
     const prevBadges = progress.unlockedBadges;
-    const updated = await progressService.addMoodEntry(progress, mood, phase);
+    const updated = await progressService.addMoodEntry(mood, phase);
     setProgress(updated);
     notifyNewBadges(prevBadges, updated.unlockedBadges);
   }
 
-  async function addChatSession() {
-    const prevBadges = progress.unlockedBadges;
-    const updated = await progressService.addChatSession(progress);
-    setProgress(updated);
-    notifyNewBadges(prevBadges, updated.unlockedBadges);
-  }
-
-  // Chamado ao enviar uma mensagem ao Sage. Aplica o streak de mensagem do dia
-  // (5 -> 50, 1x/dia) e marca a primeira conversa (badge first_chat) — tudo numa
-  // ÚNICA cadeia de atualização para evitar corrida entre duas mutações sobre o
-  // mesmo `progress` (que perderia o chatStreak ou o first_chat).
+  // Chamado ao enviar uma mensagem ao Sage. O servidor aplica o streak de
+  // mensagem do dia (5 -> 50, 1x/dia) e marca a primeira conversa (badge
+  // first_chat) numa única transação.
   async function onSageMessageSent() {
     const prevBadges = progress.unlockedBadges;
-    let { progress: updated, chatXP } = await progressService.applyChatStreak(progress);
-    if (!updated.chatSessions) {
-      updated = await progressService.addChatSession(updated);
-    }
+    const { progress: updated, chatXP } = await progressService.applyChatStreak();
     setProgress(updated);
     if (chatXP > 0) showXpNotification(chatXP);
     notifyNewBadges(prevBadges, updated.unlockedBadges);
@@ -212,9 +213,10 @@ export function UserProvider({ children }) {
 
   async function addJournalEntry(mood, text) {
     const prevBadges = progress.unlockedBadges;
-    const entry = await journalService.addEntry(mood, text);
-    const updated = await progressService.incrementJournalEntries(progress);
+    const { entry, progressRow, journalXP } = await journalService.addEntry(mood, text);
+    const updated = progressService.dbToProgress(progressRow);
     setProgress(updated);
+    if (journalXP > 0) showXpNotification(journalXP);
     notifyNewBadges(prevBadges, updated.unlockedBadges);
     return entry;
   }
@@ -223,22 +225,13 @@ export function UserProvider({ children }) {
     return journalService.getEntries();
   }
 
-  async function completeChallengeToday(challengeId, xp) {
+  // Conclui um desafio do dia. XP e badge all_challenges são decididos no
+  // servidor (idempotente por usuário/desafio/dia).
+  async function completeChallengeToday(challengeId) {
     const prevBadges = progress.unlockedBadges;
-    await challengeService.markChallengeComplete(challengeId);
-    let updated = await progressService.addXP(progress, xp);
-    showXpNotification(xp);
-
-    // Badge "all_challenges": destrava quando os 3 desafios do dia estão
-    // concluídos. A condição depende dos challenge_logs (não de `progress`),
-    // por isso é verificada aqui e não em checkBadges.
-    const daily = getDailyChallenges();
-    const requiredIds = [daily.mindfulness.id, daily.gratitude.id, daily.breathing.id];
-    const done = await challengeService.getCompletedToday();
-    if (requiredIds.every((id) => done.includes(id))) {
-      updated = await progressService.unlockBadge(updated, 'all_challenges');
-    }
+    const { progress: updated, challengeXP } = await progressService.completeChallenge(challengeId);
     setProgress(updated);
+    if (challengeXP > 0) showXpNotification(challengeXP);
     notifyNewBadges(prevBadges, updated.unlockedBadges);
   }
 
@@ -269,9 +262,7 @@ export function UserProvider({ children }) {
     changePassword,
     clearData,
     deleteAccount,
-    addXP,
     addMoodEntry,
-    addChatSession,
     onSageMessageSent,
     addJournalEntry,
     getJournalEntries,

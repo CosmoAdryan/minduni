@@ -15,7 +15,7 @@ export async function getEntries() {
     .order('created_at', { ascending: false })
     .limit(50);
 
-  if (error) return [];
+  if (error) throw new Error(error.message);
   return data.map((row) => ({
     id: row.id,
     mood: row.mood,
@@ -24,19 +24,25 @@ export async function getEntries() {
   }));
 }
 
+// Cria a entrada via RPC (gam_add_journal_entry): o servidor grava a entrada,
+// atualiza o contador, premia +20 XP e recalcula badges numa única transação.
+// Returns { entry, progress: <linha db>, journalXP }.
 export async function addEntry(mood, text) {
-  const userId = await getCurrentUserId();
-  const { data, error } = await supabase
-    .from('journal_entries')
-    .insert({ user_id: userId, mood, text })
-    .select()
-    .single();
-
+  const { data, error } = await supabase.rpc('gam_add_journal_entry', {
+    p_mood: mood,
+    p_text: text,
+  });
   if (error) throw new Error(error.message);
+
+  const row = data?.entry ?? {};
   return {
-    id: data.id,
-    mood: data.mood,
-    text: data.text,
-    date: data.created_at,
+    entry: {
+      id: row.id,
+      mood: row.mood,
+      text: row.text,
+      date: row.created_at,
+    },
+    progressRow: data?.progress ?? {},
+    journalXP: data?.awarded_xp ?? 0,
   };
 }

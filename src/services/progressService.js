@@ -28,39 +28,11 @@ export const INITIAL_PROGRESS = {
   chatStreakDate: null,
 };
 
-// XP da primeira mensagem do dia no chat: começa em 5 e cresce +5 por dia
-// consecutivo até travar em 50 (10º dia). Quebrar a sequência volta a 5.
-function chatStreakXP(streakDay) {
-  return Math.min(streakDay, 10) * 5;
-}
-
 export function calculateLevel(xp) {
   for (let i = LEVELS.length - 1; i >= 0; i--) {
     if (xp >= LEVELS[i].minXP) return LEVELS[i];
   }
   return LEVELS[0];
-}
-
-export function checkBadges(progress) {
-  const newBadges = [...(progress.unlockedBadges || [])];
-  const add = (id) => { if (!newBadges.includes(id)) newBadges.push(id); };
-
-  if (progress.chatSessions >= 1) add('first_chat');
-  if (progress.streak >= 3) add('streak_3');
-  if (progress.streak >= 7) add('streak_7');
-  if (progress.streak >= 30) add('streak_30');
-  if (progress.moods && progress.moods.length >= 7) add('mood_7');
-  if (progress.level >= 5) add('level_5');
-  if (progress.level >= 10) add('level_10');
-  if (progress.journalEntries >= 5) add('journal_5');
-  if (progress.totalXP >= 1000) add('xp_1000');
-  // Conquistas adicionais
-  if (progress.level >= 3) add('level_3');
-  if ((progress.chatStreak || 0) >= 7) add('chat_streak_7');
-  if (progress.moods && progress.moods.length >= 30) add('mood_30');
-  if (progress.journalEntries >= 15) add('journal_15');
-  if ((progress.daysActive || 0) >= 30) add('active_30');
-  return newBadges;
 }
 
 async function getCurrentUserId() {
@@ -69,7 +41,9 @@ async function getCurrentUserId() {
   return user.id;
 }
 
-function dbToProgress(row) {
+// Converte a linha do banco para o formato usado na UI. Exportado porque o
+// journalService também recebe a linha de progresso na resposta da RPC.
+export function dbToProgress(row) {
   return {
     totalXP: row.total_xp ?? 0,
     level: row.level ?? 1,
@@ -85,23 +59,6 @@ function dbToProgress(row) {
   };
 }
 
-function progressToDb(progress) {
-  return {
-    total_xp: progress.totalXP,
-    level: progress.level,
-    streak: progress.streak,
-    last_login: progress.lastLogin,
-    unlocked_badges: progress.unlockedBadges,
-    moods: progress.moods,
-    chat_sessions: progress.chatSessions,
-    journal_entries_count: progress.journalEntries,
-    days_active: progress.daysActive,
-    chat_streak: progress.chatStreak ?? 0,
-    chat_streak_date: progress.chatStreakDate ?? null,
-    updated_at: new Date().toISOString(),
-  };
-}
-
 export async function getProgress() {
   const userId = await getCurrentUserId();
   const { data, error } = await supabase
@@ -114,114 +71,52 @@ export async function getProgress() {
   return dbToProgress(data);
 }
 
-export async function saveProgress(progress) {
-  const userId = await getCurrentUserId();
-  const { error } = await supabase
-    .from('progress')
-    .upsert({ user_id: userId, ...progressToDb(progress) }, { onConflict: 'user_id' });
+// ─── RPCs de gamificação ─────────────────────────────────────────────────────
+// XP, streaks e badges são calculados NO SERVIDOR (funções gam_* no Postgres):
+// o cliente não define valores de XP nem grava direto na tabela `progress`.
+// Cada RPC retorna { progress: <linha>, awarded_xp?: <int> }.
+
+async function callRpc(fn, args) {
+  const { data, error } = await supabase.rpc(fn, args);
   if (error) throw new Error(error.message);
+  return {
+    progress: dbToProgress(data?.progress ?? {}),
+    awardedXP: data?.awarded_xp ?? 0,
+    raw: data,
+  };
+}
+
+// Login diário: +10 XP e streak, 1x/dia (dia do servidor).
+// Returns { progress, loginXP } — loginXP é 0 se já logou hoje.
+export async function applyLogin() {
+  const { progress, awardedXP } = await callRpc('gam_apply_login');
+  return { progress, loginXP: awardedXP };
+}
+
+// Primeira mensagem do dia no chat: streak próprio (5 → 50) e first_chat.
+// Returns { progress, chatXP } — chatXP é 0 se já recompensou hoje.
+export async function applyChatStreak() {
+  const { progress, awardedXP } = await callRpc('gam_apply_chat_streak');
+  return { progress, chatXP: awardedXP };
+}
+
+// Conclui um desafio do dia. XP definido no servidor pelo ID; idempotente.
+// Returns { progress, challengeXP } — challengeXP é 0 se já concluído hoje.
+export async function completeChallenge(challengeId) {
+  const { progress, awardedXP } = await callRpc('gam_complete_challenge', {
+    p_challenge_id: challengeId,
+  });
+  return { progress, challengeXP: awardedXP };
+}
+
+// Registra um humor (check-in). Sem XP; alimenta badges mood_7/mood_30.
+export async function addMoodEntry(mood, phase) {
+  const { progress } = await callRpc('gam_add_mood', { p_mood: mood, p_phase: phase });
   return progress;
 }
 
-// Returns { progress, loginXP } — loginXP is 0 if already logged in today
-export async function applyLogin(savedProgress) {
-  const today = new Date().toDateString();
-  if (savedProgress.lastLogin === today) {
-    return { progress: savedProgress, loginXP: 0 };
-  }
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const isConsecutive = savedProgress.lastLogin === yesterday.toDateString();
-  const updated = {
-    ...savedProgress,
-    streak: isConsecutive ? (savedProgress.streak || 0) + 1 : 1,
-    lastLogin: today,
-    daysActive: (savedProgress.daysActive || 0) + 1,
-    totalXP: (savedProgress.totalXP || 0) + 10,
-  };
-  const levelInfo = calculateLevel(updated.totalXP);
-  updated.level = levelInfo.level;
-  updated.unlockedBadges = checkBadges(updated);
-  await saveProgress(updated);
-  return { progress: updated, loginXP: 10 };
-}
-
-export async function addXP(currentProgress, amount) {
-  const newXP = (currentProgress.totalXP || 0) + amount;
-  const levelInfo = calculateLevel(newXP);
-  const updated = { ...currentProgress, totalXP: newXP, level: levelInfo.level };
-  updated.unlockedBadges = checkBadges(updated);
-  await saveProgress(updated);
-  return updated;
-}
-
-export async function addMoodEntry(currentProgress, mood, phase) {
-  const entry = { mood, phase, date: new Date().toISOString() };
-  const updated = {
-    ...currentProgress,
-    moods: [...(currentProgress.moods || []), entry],
-  };
-  updated.unlockedBadges = checkBadges(updated);
-  await saveProgress(updated);
-  return updated;
-}
-
-export async function addChatSession(currentProgress) {
-  const updated = {
-    ...currentProgress,
-    chatSessions: (currentProgress.chatSessions || 0) + 1,
-  };
-  updated.unlockedBadges = checkBadges(updated);
-  await saveProgress(updated);
-  return updated;
-}
-
-// Recompensa a primeira mensagem do dia no chat com o Sage. Coexiste com o
-// streak de login: streak próprio (chatStreak) e XP escalonado 5 -> 50.
-// Returns { progress, chatXP } — chatXP é 0 se já recompensou hoje.
-export async function applyChatStreak(currentProgress) {
-  const today = new Date().toDateString();
-  if (currentProgress.chatStreakDate === today) {
-    return { progress: currentProgress, chatXP: 0 };
-  }
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const isConsecutive = currentProgress.chatStreakDate === yesterday.toDateString();
-  const newStreak = isConsecutive ? (currentProgress.chatStreak || 0) + 1 : 1;
-  const xp = chatStreakXP(newStreak);
-  const updated = {
-    ...currentProgress,
-    chatStreak: newStreak,
-    chatStreakDate: today,
-    totalXP: (currentProgress.totalXP || 0) + xp,
-  };
-  updated.level = calculateLevel(updated.totalXP).level;
-  updated.unlockedBadges = checkBadges(updated);
-  await saveProgress(updated);
-  return { progress: updated, chatXP: xp };
-}
-
-// Destrava um badge específico (idempotente). Usado por conquistas cuja
-// condição não depende só de `progress` (ex.: all_challenges, que depende dos
-// challenge_logs do dia).
-export async function unlockBadge(currentProgress, badgeId) {
-  if ((currentProgress.unlockedBadges || []).includes(badgeId)) {
-    return currentProgress;
-  }
-  const updated = {
-    ...currentProgress,
-    unlockedBadges: [...(currentProgress.unlockedBadges || []), badgeId],
-  };
-  await saveProgress(updated);
-  return updated;
-}
-
-export async function incrementJournalEntries(currentProgress) {
-  const updated = {
-    ...currentProgress,
-    journalEntries: (currentProgress.journalEntries || 0) + 1,
-  };
-  updated.unlockedBadges = checkBadges(updated);
-  await saveProgress(updated);
-  return updated;
+// Zera o progresso (usado no cadastro e em "limpar dados").
+export async function resetProgress() {
+  const { progress } = await callRpc('gam_reset_progress');
+  return progress;
 }

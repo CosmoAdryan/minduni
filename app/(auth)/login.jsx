@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError('');
     if (!email || !password) { setError('Preencha todos os campos'); return; }
     if (isRegister && !name) { setError('Informe seu nome'); return; }
-    if (password.length < 6) { setError('Senha deve ter pelo menos 6 caracteres'); return; }
+    if (isRegister && password.length < 8) { setError('Senha deve ter pelo menos 8 caracteres'); return; }
 
     setLoading(true);
     try {
@@ -69,6 +69,7 @@ export default function LoginPage() {
                 <TextInput
                   className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
                   placeholder="Seu nome"
+                  placeholderTextColor="#A29D95"
                   value={name}
                   onChangeText={setName}
                   autoCapitalize="words"
@@ -81,6 +82,7 @@ export default function LoginPage() {
               <TextInput
                 className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
                 placeholder="seu@email.com"
+                placeholderTextColor="#A29D95"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -93,7 +95,8 @@ export default function LoginPage() {
               <View className="flex-row items-center bg-stone-100 border border-stone-200 rounded-xl">
                 <TextInput
                   className="flex-1 px-4 py-3 text-stone-900"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder={isRegister ? 'Mínimo 8 caracteres' : 'Sua senha'}
+                  placeholderTextColor="#A29D95"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
