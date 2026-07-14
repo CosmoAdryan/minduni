@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, AppState,
+  View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Search, X, Flame, Lightbulb, Lock, Download } from 'lucide-react-native';
+import { Search, X, Flame, Lightbulb, Download } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import MoodOption from '../../src/components/MoodOption';
 import MoodChart from '../../src/components/MoodChart';
@@ -13,7 +12,6 @@ import WeeklyInsights from '../../src/components/WeeklyInsights';
 import { journalStreak } from '../../src/lib/journalInsights';
 import { getDailyPrompt } from '../../src/data/journalPrompts';
 import { getPracticeDates } from '../../src/services/challengeService';
-import { isJournalLockEnabled, authenticate } from '../../src/services/journalLockService';
 import { exportJournalPdf } from '../../src/services/journalExportService';
 
 const MOODS = [
@@ -38,9 +36,6 @@ export default function JournalPage() {
   const [filterMood, setFilterMood] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [practiceDates, setPracticeDates] = useState(null);
-  // Bloqueio do diário: lockEnabled null = preferência ainda desconhecida.
-  const [lockEnabled, setLockEnabled] = useState(null);
-  const [unlocked, setUnlocked] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const dailyPrompt = getDailyPrompt();
@@ -50,31 +45,6 @@ export default function JournalPage() {
     loadEntries();
     // Datas de prática para a correlação humor × prática (falha silenciosa).
     getPracticeDates(30).then(setPracticeDates).catch(() => {});
-  }, []);
-
-  // Bloqueio: ao focar o Diário, lê a preferência e (se ligada) pede autenticação.
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      (async () => {
-        const enabled = await isJournalLockEnabled();
-        if (!active) return;
-        setLockEnabled(enabled);
-        if (enabled && !unlocked) {
-          const ok = await authenticate();
-          if (active && ok) setUnlocked(true);
-        }
-      })();
-      return () => { active = false; };
-    }, [unlocked])
-  );
-
-  // Re-bloqueia ao enviar o app para segundo plano (celular compartilhado).
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'background') setUnlocked(false);
-    });
-    return () => sub.remove();
   }, []);
 
   async function handleExport() {
@@ -129,39 +99,6 @@ export default function JournalPage() {
   });
 
   const canSave = selectedMood && text.trim().length > 0 && !saving;
-
-  // Enquanto a preferência de bloqueio não carrega, evita piscar o conteúdo.
-  if (lockEnabled === null) {
-    return (
-      <SafeAreaView edges={['top']} className="flex-1 bg-stone-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#3D7A67" />
-      </SafeAreaView>
-    );
-  }
-
-  // Diário bloqueado: exige autenticação antes de mostrar qualquer entrada.
-  if (lockEnabled && !unlocked) {
-    return (
-      <SafeAreaView edges={['top']} className="flex-1 bg-stone-50 items-center justify-center px-8">
-        <View className="w-20 h-20 rounded-full items-center justify-center mb-5" style={{ backgroundColor: '#EEF5F1' }}>
-          <Lock size={34} color="#3D7A67" />
-        </View>
-        <Text className="text-xl font-bold text-stone-900 mb-1">Diário bloqueado</Text>
-        <Text className="text-stone-500 text-center mb-6">
-          Seu diário está protegido. Autentique-se para acessar suas entradas.
-        </Text>
-        <TouchableOpacity
-          className="bg-sage-500 px-6 py-3 rounded-2xl flex-row items-center"
-          onPress={async () => { const ok = await authenticate(); if (ok) setUnlocked(true); }}
-          accessibilityRole="button"
-          accessibilityLabel="Desbloquear diário"
-        >
-          <Lock size={18} color="white" style={{ marginRight: 8 }} />
-          <Text className="text-white font-bold">Desbloquear</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">

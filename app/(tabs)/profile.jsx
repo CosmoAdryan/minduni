@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { LogOut, Flame, Award, Zap, BookOpen, MessageCircle, Calendar, Shield, Pencil, Bell, Lock } from 'lucide-react-native';
+import { LogOut, Flame, Award, Zap, BookOpen, MessageCircle, Calendar, Shield, Pencil, Bell } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import { BADGES } from '../../src/data/badges';
 import { CATEGORY_META } from '../../src/data/challenges';
@@ -13,7 +13,6 @@ import { getPracticeStats } from '../../src/services/challengeService';
 import {
   getReminderPrefs, setReminderEnabled, setReminderTime, REMINDER_PRESETS,
 } from '../../src/services/notificationService';
-import { isJournalLockEnabled, setJournalLockEnabled } from '../../src/services/journalLockService';
 import XPBar from '../../src/components/XPBar';
 import BadgeCard from '../../src/components/BadgeCard';
 
@@ -29,31 +28,14 @@ export default function ProfilePage() {
   // Lembrete diário local (engajamento).
   const [reminderEnabled, setReminderEnabledState] = useState(false);
   const [reminderTime, setReminderTimeState] = useState('20:00');
-  // Bloqueio do diário (privacidade).
-  const [journalLock, setJournalLock] = useState(false);
 
   useEffect(() => {
     let active = true;
     getReminderPrefs()
       .then((p) => { if (active) { setReminderEnabledState(p.enabled); setReminderTimeState(p.time); } })
       .catch(() => {});
-    isJournalLockEnabled()
-      .then((v) => { if (active) setJournalLock(v); })
-      .catch(() => {});
     return () => { active = false; };
   }, []);
-
-  async function toggleJournalLock(value) {
-    setJournalLock(value); // otimista
-    const { enabled, unavailable } = await setJournalLockEnabled(value);
-    setJournalLock(enabled);
-    if (value && unavailable) {
-      Alert.alert(
-        'Configure uma proteção',
-        'Para bloquear o diário, ative biometria ou senha/PIN nas configurações do seu aparelho.',
-      );
-    }
-  }
 
   async function toggleReminder(value) {
     // Otimista: reflete na UI e reverte se a permissão for negada.
@@ -263,27 +245,6 @@ export default function ProfilePage() {
               </View>
             </View>
           )}
-        </View>
-
-        {/* Segurança */}
-        <Text className="font-bold text-stone-900 text-lg mb-3">Segurança</Text>
-        <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
-          <View className="flex-row items-center">
-            <View className="w-10 h-10 rounded-2xl items-center justify-center mr-3" style={{ backgroundColor: '#EEF5F1' }}>
-              <Lock size={20} color="#3D7A67" />
-            </View>
-            <View className="flex-1">
-              <Text className="font-semibold text-stone-800">Bloquear diário</Text>
-              <Text className="text-xs text-stone-500 mt-0.5">Exige biometria ou senha do aparelho para abrir</Text>
-            </View>
-            <Switch
-              value={journalLock}
-              onValueChange={toggleJournalLock}
-              trackColor={{ false: '#E6E2DB', true: '#A9D3BF' }}
-              thumbColor={journalLock ? '#3D7A67' : '#FAFAF8'}
-              accessibilityLabel="Bloquear o diário com biometria"
-            />
-          </View>
         </View>
 
         {/* Política de Privacidade */}
