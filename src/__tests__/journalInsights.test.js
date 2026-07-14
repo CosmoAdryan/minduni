@@ -5,6 +5,7 @@ import {
   weeklySummary,
   journalStreak,
   moodPracticeCorrelation,
+  formatWeekForSage,
   localDayKey,
   utcDayKey,
 } from '../lib/journalInsights';
@@ -133,6 +134,25 @@ describe('day keys', () => {
   it('localDayKey e utcDayKey retornam YYYY-MM-DD', () => {
     expect(localDayKey(new Date('2026-07-13T12:00:00'))).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(utcDayKey(new Date('2026-07-13T12:00:00Z'))).toBe('2026-07-13');
+  });
+});
+
+describe('formatWeekForSage', () => {
+  const now = new Date('2026-07-13T12:00:00');
+
+  it('retorna null sem registros na semana', () => {
+    expect(formatWeekForSage([], now)).toBeNull();
+  });
+
+  it('inclui média, contagem e dias da semana', () => {
+    const entries = [
+      { mood: 4, date: daysAgo(0, now) },
+      { mood: 2, date: daysAgo(1, now) },
+    ];
+    const text = formatWeekForSage(entries, now);
+    expect(text).toContain('Média 3.0 de 5');
+    expect(text).toContain('2 registros');
+    expect(text).toMatch(/bem|mal/);
   });
 });
 

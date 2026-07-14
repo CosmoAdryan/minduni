@@ -6,6 +6,7 @@ const WEEKDAYS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', '
 
 const clampMood = (v) => Math.min(5, Math.max(1, Math.round(v)));
 export const moodEmoji = (avg) => MOOD_EMOJIS[clampMood(avg) - 1];
+const MOOD_WORDS = ['muito mal', 'mal', 'neutro', 'bem', 'ótimo'];
 
 // Chave de dia no fuso LOCAL — usada no que o usuário vê (resumo e streak),
 // para casar com o gráfico de humor que também agrupa por dia local.
@@ -72,6 +73,30 @@ export function weeklySummary(entries, now = new Date()) {
     bestDayAvg: best.avg,
     bestDayEmoji: moodEmoji(best.avg),
   };
+}
+
+/**
+ * Resumo textual do humor dos últimos 7 dias, para injetar no contexto do Sage
+ * quando o usuário toca em "Resumir minha semana". Retorna null sem registros.
+ */
+export function formatWeekForSage(entries, now = new Date()) {
+  const summary = weeklySummary(entries, now);
+  if (!summary) return null;
+
+  const cutoff = new Date(now);
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setDate(cutoff.getDate() - 6);
+  const recent = validEntries(entries).filter((e) => new Date(e.date) >= cutoff);
+
+  const days = [...dailyAverages(recent, localDayKey).values()]
+    .map((v) => ({ mood: v.sum / v.count, ts: v.ts }))
+    .sort((a, b) => a.ts - b.ts);
+
+  const parts = days.map(
+    (d) => `${WEEKDAYS[new Date(d.ts).getDay()]}: ${MOOD_WORDS[clampMood(d.mood) - 1]}`
+  );
+
+  return `Humor dos últimos 7 dias — ${parts.join('; ')}. Média ${summary.avgMood.toFixed(1)} de 5 em ${summary.count} ${summary.count === 1 ? 'registro' : 'registros'}. Melhor dia: ${summary.bestDayLabel}.`;
 }
 
 /**

@@ -4,14 +4,24 @@ import {
   KeyboardAvoidingView, ActivityIndicator, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Send, AlertCircle, X } from 'lucide-react-native';
+import { Send, AlertCircle, X, Sparkles } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import { ChatMessage, TypingIndicator } from '../../src/components/ChatMessage';
 import { detectCrisis } from '../../src/data/chatResponses';
 import CrisisModal from '../../src/components/CrisisModal';
 import CVVButton from '../../src/components/CVVButton';
 import { MOOD_COLORS } from '../../src/theme/tokens';
+import { formatWeekForSage } from '../../src/lib/journalInsights';
 import * as chatService from '../../src/services/chatService';
+
+// Sugestões de abertura para quem não sabe por onde começar. Aparecem só
+// enquanto o usuário ainda não enviou nenhuma mensagem.
+const STARTER_CHIPS = [
+  'Estou ansioso(a) com a faculdade',
+  'Tive um dia difícil',
+  'Preciso desabafar',
+  'Não sei por onde começar',
+];
 
 const MOOD_OPTIONS = [
   { value: 1, emoji: '😢' },
@@ -69,7 +79,7 @@ function moodLoggedToday(moods) {
 }
 
 export default function ChatPage() {
-  const { progress, addMoodEntry, onSageMessageSent } = useUser();
+  const { progress, addMoodEntry, onSageMessageSent, getJournalEntries } = useUser();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
@@ -78,7 +88,13 @@ export default function ChatPage() {
   const [sessionId, setSessionId] = useState(null);
   const [moodChoice, setMoodChoice] = useState(null);
   const [moodDismissed, setMoodDismissed] = useState(false);
+  // Resumo textual do humor da semana (null = sem dados); habilita o botão
+  // "Resumir minha semana".
+  const [weekSummary, setWeekSummary] = useState(null);
   const listRef = useRef(null);
+
+  // Só mostra as sugestões de abertura enquanto o usuário não escreveu nada.
+  const hasUserMessage = useMemo(() => messages.some((m) => m.role === 'user'), [messages]);
 
   const todaysMood = useMemo(() => moodLoggedToday(progress.moods), [progress.moods]);
   const activeMood = moodChoice ?? todaysMood;
@@ -138,15 +154,27 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Calcula o resumo do humor da semana (para o botão "Resumir minha semana").
+  useEffect(() => {
+    let active = true;
+    getJournalEntries()
+      .then((entries) => { if (active) setWeekSummary(formatWeekForSage(entries)); })
+      .catch(() => {});
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function pickMood(value) {
     setMoodChoice(value);
     addMoodEntry(value, 'daily');
   }
 
-  async function handleSend() {
-    if (!input.trim() || typing) return;
+  // Envia uma mensagem ao Sage. `preset` (dos chips) tem prioridade sobre o
+  // campo de texto; `moodSummary` injeta o humor da semana no contexto.
+  async function sendToSage(preset, moodSummary) {
+    const text = (typeof preset === 'string' ? preset : input).trim();
+    if (!text || typing) return;
 
-    const text = input.trim();
     const history = messages; // estado antes de adicionar a mensagem atual
     const userMsg = {
       id: Date.now().toString(),
@@ -155,7 +183,7 @@ export default function ChatPage() {
       timestamp: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, userMsg]);
-    setInput('');
+    if (typeof preset !== 'string') setInput('');
 
     // Aplica o streak de mensagem do dia (5->50) e marca a primeira conversa
     // (badge first_chat). Guardado por data/estado internamente.
@@ -165,7 +193,7 @@ export default function ChatPage() {
 
     setTyping(true);
     try {
-      const data = await chatService.sendMessage(sessionId, text, history.slice(-9), activeMood);
+      const data = await chatService.sendMessage(sessionId, text, history.slice(-9), activeMood, moodSummary);
       await revealSageMessages(data.response);
     } catch (err) {
       console.error('[Sage error]', err.message);
@@ -181,6 +209,13 @@ export default function ChatPage() {
     } finally {
       setTyping(false);
     }
+  }
+
+  // "Resumir minha semana": mostra uma pergunta amigável como bolha do usuário e
+  // injeta os dados de humor no contexto do Sage (sem despejar o dado cru).
+  function handleSummarizeWeek() {
+    if (!weekSummary || typing) return;
+    sendToSage('Pode me ajudar a refletir sobre como foi a minha semana?', weekSummary);
   }
 
   // FlatList invertida: a mensagem mais recente fica em data[0] (no rodapé).
@@ -262,6 +297,36 @@ export default function ChatPage() {
           />
         )}
 
+        {/* Sugestões de abertura (chips) + resumo da semana */}
+        {!hasUserMessage && !loading && !typing && (
+          <View style={{ paddingHorizontal: 12, paddingTop: 4, paddingBottom: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {weekSummary && (
+                <TouchableOpacity
+                  onPress={handleSummarizeWeek}
+                  accessibilityRole="button"
+                  accessibilityLabel="Resumir minha semana com o Sage"
+                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#D4E9DE', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 }}
+                >
+                  <Sparkles size={14} color="#1E4D41" style={{ marginRight: 6 }} />
+                  <Text style={{ fontSize: 13, color: '#1E4D41', fontWeight: '600' }}>Resumir minha semana</Text>
+                </TouchableOpacity>
+              )}
+              {STARTER_CHIPS.map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  onPress={() => sendToSage(c)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Enviar: ${c}`}
+                  style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#E6E2DB', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 }}
+                >
+                  <Text style={{ fontSize: 13, color: '#57534E' }}>{c}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Composer */}
         <View className="bg-white px-4 py-3 flex-row items-end border-t border-stone-200">
           <TextInput
@@ -275,7 +340,7 @@ export default function ChatPage() {
           />
           <TouchableOpacity
             className={`w-11 h-11 rounded-full items-center justify-center ${input.trim() ? 'bg-sage-500' : 'bg-stone-200'}`}
-            onPress={handleSend}
+            onPress={() => sendToSage()}
             disabled={!input.trim() || typing}
             accessibilityLabel="Enviar mensagem"
             accessibilityRole="button"

@@ -6,9 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// TEMPORÁRIO (testes): preview tem 500 req/dia no plano grátis vs 20 do
-// gemini-2.5-flash. Ao ligar billing, voltar para 'gemini-2.5-flash'.
-const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview';
+// Modelo do Sage: Gemini 3.1 Flash Lite (versão estável) — rápido e barato
+// (US$ 0,25/1M in, US$ 1,50/1M out), adequado a diálogos curtos de apoio.
+// Exige billing ativo no Google. Se a API rejeitar o id estável, a alternativa
+// é 'gemini-3.1-flash-lite-preview'.
+const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 
 const SYSTEM_PROMPT = `Você é o Sage, assistente de bem-estar emocional baseado em Terapia Cognitivo-Comportamental (TCC) para estudantes universitários brasileiros. É empático, acolhedor e sem julgamentos. Você APOIA, não substitui psicólogos.
 
@@ -201,6 +203,10 @@ serve(async (req) => {
     const { session_id, message, history, intro } = body;
     // Humor: só aceita inteiro 1–5; qualquer outra coisa vira null.
     const mood = Number.isInteger(body.mood) && body.mood >= 1 && body.mood <= 5 ? body.mood : null;
+    // Resumo semanal de humor, opcional ("Resumir minha semana"): dado real do
+    // diário injetado no contexto (não no histórico visível). Não confiável:
+    // valida tipo e trunca.
+    const moodSummary = typeof body.mood_summary === 'string' ? body.mood_summary.slice(0, 600).trim() : '';
 
     // A sessão precisa existir E pertencer ao usuário. A consulta usa o client
     // com o JWT do usuário, então a RLS só enxerga as sessões dele — session_id
@@ -339,6 +345,12 @@ serve(async (req) => {
       ? `\n\nRESUMO DO QUE JÁ CONVERSARAM (use para manter continuidade; não repita de volta literalmente): ${sessionSummary}`
       : '';
 
+    // Resumo semanal de humor ("Resumir minha semana"): dado real do diário.
+    // Peça ao Sage para refletir com o usuário sobre padrões e altos/baixos.
+    const weeklyMoodContext = moodSummary
+      ? `\n\nHUMOR DA SEMANA (o usuário pediu para refletir sobre a própria semana; use estes dados reais do diário dele, comente padrões e altos e baixos com gentileza, valide os sentimentos e faça no máximo UMA pergunta): ${moodSummary}`
+      : '';
+
     // Build Gemini history — Gemini requires contents to start with 'user'.
     // O history vem do cliente: limita a quantidade de itens e o tamanho de
     // cada um antes de montar o prompt (contém o custo e o abuso).
@@ -369,7 +381,7 @@ serve(async (req) => {
     const geminiHistory = firstUserIdx >= 0 ? merged.slice(firstUserIdx).slice(-9) : [];
 
     const geminiBody = {
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT + moodContext + summaryContext }] },
+      system_instruction: { parts: [{ text: SYSTEM_PROMPT + moodContext + summaryContext + weeklyMoodContext }] },
       contents: [
         ...geminiHistory,
         { role: 'user', parts: [{ text: message }] },
