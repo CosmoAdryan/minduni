@@ -10,8 +10,9 @@ import { useUser } from '../../src/context/UserContext';
 import XPBar from '../../src/components/XPBar';
 import StreakCard from '../../src/components/StreakCard';
 import MoodChart from '../../src/components/MoodChart';
+import WeeklyInsights from '../../src/components/WeeklyInsights';
 import { getDailyChallenges } from '../../src/data/challenges';
-import { getCompletedToday } from '../../src/services/challengeService';
+import { getCompletedToday, getPracticeDates } from '../../src/services/challengeService';
 
 const QUICK_ACTIONS = [
   { title: 'Conversar com o Sage', icon: MessageCircle, color: '#3D7A67', bg: '#D4E9DE', route: '/chat' },
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [showStreak, setShowStreak] = useState(false);
   // Mesma fonte do gráfico do Diário, para os dois ficarem idênticos.
   const [moodEntries, setMoodEntries] = useState([]);
+  const [practiceDates, setPracticeDates] = useState(null);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -39,6 +41,9 @@ export default function Dashboard() {
       let active = true;
       getJournalEntries()
         .then((d) => { if (active) setMoodEntries(d); })
+        .catch(() => {});
+      getPracticeDates(30)
+        .then((s) => { if (active) setPracticeDates(s); })
         .catch(() => {});
       return () => { active = false; };
     }, [])
@@ -181,6 +186,9 @@ export default function Dashboard() {
 
           {/* Mood Chart */}
           <MoodChart data={moodEntries} />
+
+          {/* Insights da semana + correlação humor × prática */}
+          <WeeklyInsights entries={moodEntries} practiceDates={practiceDates} containerStyle={{ marginTop: 16 }} />
         </View>
       </ScrollView>
     </SafeAreaView>

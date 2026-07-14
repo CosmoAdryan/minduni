@@ -48,6 +48,23 @@ export async function getWeeklyCompletion() {
   return results;
 }
 
+// Datas (YYYY-MM-DD) com ao menos uma prática concluída nos últimos `days` dias.
+// Usado para cruzar humor × prática nos insights do diário.
+export async function getPracticeDates(days = 30) {
+  const userId = await getCurrentUserId();
+  const since = new Date();
+  since.setDate(since.getDate() - (days - 1));
+
+  const { data, error } = await supabase
+    .from('challenge_logs')
+    .select('completed_date')
+    .eq('user_id', userId)
+    .gte('completed_date', toISODate(since));
+
+  if (error) return new Set();
+  return new Set((data || []).map((row) => row.completed_date));
+}
+
 // A conclusão de desafios agora é feita pela RPC gam_complete_challenge
 // (via progressService.completeChallenge): o servidor valida o ID, define o
 // XP e grava o log — o INSERT direto em challenge_logs foi revogado.

@@ -4,10 +4,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Search, X } from 'lucide-react-native';
+import { Search, X, Flame, Lightbulb } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import MoodOption from '../../src/components/MoodOption';
 import MoodChart from '../../src/components/MoodChart';
+import WeeklyInsights from '../../src/components/WeeklyInsights';
+import { journalStreak } from '../../src/lib/journalInsights';
+import { getDailyPrompt } from '../../src/data/journalPrompts';
+import { getPracticeDates } from '../../src/services/challengeService';
 
 const MOODS = [
   { value: 1, emoji: '😢', label: 'Muito mal' },
@@ -30,9 +34,15 @@ export default function JournalPage() {
   const [toast, setToast] = useState(null);
   const [filterMood, setFilterMood] = useState(null);
   const [searchText, setSearchText] = useState('');
+  const [practiceDates, setPracticeDates] = useState(null);
+
+  const dailyPrompt = getDailyPrompt();
+  const streak = journalStreak(entries);
 
   useEffect(() => {
     loadEntries();
+    // Datas de prática para a correlação humor × prática (falha silenciosa).
+    getPracticeDates(30).then(setPracticeDates).catch(() => {});
   }, []);
 
   async function loadEntries() {
@@ -79,7 +89,19 @@ export default function JournalPage() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        <Text className="text-2xl font-bold text-stone-900 mb-4">Diário emocional</Text>
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-2xl font-bold text-stone-900">Diário emocional</Text>
+          {streak > 0 && (
+            <View
+              className="flex-row items-center bg-orange-50 rounded-full px-3 py-1.5"
+              accessibilityLabel={`Sequência de diário: ${streak} ${streak === 1 ? 'dia' : 'dias'}`}
+            >
+              <Flame size={15} color="#F97316" />
+              <Text className="ml-1 text-sm font-bold text-orange-500">{streak}</Text>
+              <Text className="ml-1 text-xs text-orange-400">{streak === 1 ? 'dia' : 'dias'}</Text>
+            </View>
+          )}
+        </View>
 
         {/* Toast */}
         {toast && (
@@ -121,6 +143,17 @@ export default function JournalPage() {
         {/* Text input */}
         <View className="bg-white rounded-2xl p-4 shadow-sm mb-4">
           <Text className="font-semibold text-stone-700 mb-2">O que está no seu coração?</Text>
+          {text.trim().length === 0 && (
+            <TouchableOpacity
+              className="flex-row items-center bg-sage-50 rounded-xl px-3 py-2.5 mb-2"
+              onPress={() => setText(`${dailyPrompt}\n\n`)}
+              accessibilityLabel={`Escrever a partir da pergunta: ${dailyPrompt}`}
+              accessibilityRole="button"
+            >
+              <Lightbulb size={16} color="#3D7A67" style={{ marginRight: 8 }} />
+              <Text className="flex-1 text-sm text-sage-700 italic">{dailyPrompt}</Text>
+            </TouchableOpacity>
+          )}
           <TextInput
             className="bg-stone-100 border border-stone-200 rounded-xl p-3 text-stone-900 min-h-28"
             placeholder="Escreva livremente sobre como está se sentindo..."
@@ -152,6 +185,9 @@ export default function JournalPage() {
 
         {/* Mood Chart */}
         <MoodChart data={entries} containerStyle={{ marginBottom: 16 }} />
+
+        {/* Insights da semana + correlação humor × prática */}
+        <WeeklyInsights entries={entries} practiceDates={practiceDates} containerStyle={{ marginBottom: 16 }} />
 
         {/* History with filter + search */}
         {entries.length > 0 && (
