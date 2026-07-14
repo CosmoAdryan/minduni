@@ -94,13 +94,89 @@ export const BREATHING_CHALLENGES = [
   },
 ];
 
-export function getDailyChallenges() {
+// ── Desafios baseados em TCC (terapia cognitivo-comportamental) ──────────────
+
+// Registro de pensamentos (RPD): situação → pensamento automático → emoção →
+// evidências → reestruturação. Mesma mecânica de prompts da gratidão.
+export const THOUGHT_RECORD_CHALLENGES = [
+  {
+    id: 'thought_record_1',
+    title: 'Registro de Pensamentos',
+    description: 'Examine um pensamento difícil e encontre um olhar mais equilibrado',
+    icon: '🧠',
+    color: 'bg-violet-500',
+    xp: 30,
+    prompts: [
+      'Descreva brevemente uma situação recente que te incomodou...',
+      'Qual pensamento passou pela sua cabeça naquele momento?',
+      'Que emoção você sentiu? Dê uma nota de 0 a 10 para a intensidade...',
+      'Quais fatos apoiam esse pensamento? E quais o contradizem?',
+      'Reescreva o pensamento de um jeito mais equilibrado e realista...',
+    ],
+  },
+];
+
+// Grounding 5-4-3-2-1: ancoragem sensorial no presente, no ritmo do usuário.
+export const GROUNDING_CHALLENGES = [
+  {
+    id: 'grounding_1',
+    title: 'Grounding 5-4-3-2-1',
+    description: 'Ancore-se no presente usando os cinco sentidos',
+    icon: '🌳',
+    color: 'bg-emerald-500',
+    xp: 20,
+    senses: [
+      { count: 5, icon: '👀', label: 'coisas que você pode ver', instruction: 'Olhe ao redor com calma e nomeie 5 coisas que você consegue ver agora.' },
+      { count: 4, icon: '✋', label: 'coisas que você pode tocar', instruction: 'Note 4 texturas ao seu alcance: a roupa, a cadeira, o ar na pele...' },
+      { count: 3, icon: '👂', label: 'sons que você pode ouvir', instruction: 'Feche os olhos e identifique 3 sons ao seu redor, perto ou longe.' },
+      { count: 2, icon: '👃', label: 'cheiros que você pode sentir', instruction: 'Respire fundo e perceba 2 cheiros presentes no ambiente.' },
+      { count: 1, icon: '👅', label: 'sabor que você pode sentir', instruction: 'Note 1 sabor na sua boca agora — ou apenas a sensação dela.' },
+    ],
+  },
+];
+
+// Relaxamento muscular progressivo: tensiona (5s) e solta (10s) cada grupo.
+export const RELAXATION_CHALLENGES = [
+  {
+    id: 'relaxation_1',
+    title: 'Relaxamento Muscular',
+    description: 'Tensione e solte cada grupo muscular para liberar a tensão',
+    icon: '💆',
+    color: 'bg-cyan-500',
+    xp: 25,
+    tenseSeconds: 5,
+    releaseSeconds: 10,
+    groups: [
+      { name: 'Mãos e antebraços', instruction: 'Feche os punhos com força' },
+      { name: 'Braços', instruction: 'Dobre os braços e contraia os bíceps' },
+      { name: 'Ombros e pescoço', instruction: 'Levante os ombros em direção às orelhas' },
+      { name: 'Rosto', instruction: 'Franza a testa e feche os olhos com força' },
+      { name: 'Abdômen', instruction: 'Contraia a barriga como se fosse receber um empurrão' },
+      { name: 'Pernas e pés', instruction: 'Estique as pernas e aponte os pés para frente' },
+    ],
+  },
+];
+
+export const CATEGORIES = [
+  { type: 'mindfulness', pool: MINDFULNESS_CHALLENGES },
+  { type: 'gratitude', pool: GRATITUDE_CHALLENGES },
+  { type: 'breathing', pool: BREATHING_CHALLENGES },
+  { type: 'thought_record', pool: THOUGHT_RECORD_CHALLENGES },
+  { type: 'grounding', pool: GROUNDING_CHALLENGES },
+  { type: 'relaxation', pool: RELAXATION_CHALLENGES },
+];
+
+// 3 desafios por dia, rotacionando entre as 6 categorias: o dia d mostra as
+// categorias d, d+1 e d+2 (mod 6). A combinação muda todo dia e cada categoria
+// aparece 3 dias seguidos e descansa 3 — variedade sem sumir por muito tempo.
+// A variante dentro da categoria também roda pelo dia do ano.
+// `date` é parametrizável para os testes; em produção usa o dia atual.
+export function getDailyChallenges(date = new Date()) {
   const dayOfYear = Math.floor(
-    (new Date() - new Date(new Date().getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24)
+    (date - new Date(date.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24)
   );
-  return {
-    mindfulness: MINDFULNESS_CHALLENGES[dayOfYear % MINDFULNESS_CHALLENGES.length],
-    gratitude: GRATITUDE_CHALLENGES[dayOfYear % GRATITUDE_CHALLENGES.length],
-    breathing: BREATHING_CHALLENGES[dayOfYear % BREATHING_CHALLENGES.length],
-  };
+  return [0, 1, 2].map((offset) => {
+    const cat = CATEGORIES[(dayOfYear + offset) % CATEGORIES.length];
+    return { ...cat.pool[dayOfYear % cat.pool.length], type: cat.type };
+  });
 }
