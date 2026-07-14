@@ -35,6 +35,12 @@
         {
           "photosPermission": "O MindUni usa suas fotos para você definir sua imagem de perfil."
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O MindUni usa Face ID para proteger o acesso ao seu diário."
+        }
       ]
     ],
     "experiments": {
