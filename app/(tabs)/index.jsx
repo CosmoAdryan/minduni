@@ -9,8 +9,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../src/context/UserContext';
 import XPBar from '../../src/components/XPBar';
 import StreakCard from '../../src/components/StreakCard';
+import StreakAtRiskCard from '../../src/components/StreakAtRiskCard';
 import MoodChart from '../../src/components/MoodChart';
 import WeeklyInsights from '../../src/components/WeeklyInsights';
+import { isStreakAtRisk } from '../../src/lib/streak';
 import { getDailyChallenges } from '../../src/data/challenges';
 import { getCompletedToday, getPracticeDates } from '../../src/services/challengeService';
 
@@ -22,11 +24,26 @@ const QUICK_ACTIONS = [
 ];
 
 export default function Dashboard() {
-  const { currentUser, progress, loading, getJournalEntries } = useUser();
+  const { currentUser, progress, loading, getJournalEntries, secureDailyStreak } = useUser();
   const router = useRouter();
   const [featuredChallenge, setFeaturedChallenge] = useState(null);
   const [loadingChallenge, setLoadingChallenge] = useState(true);
   const [showStreak, setShowStreak] = useState(false);
+  const [securing, setSecuring] = useState(false);
+
+  const atRisk = isStreakAtRisk(progress);
+
+  async function handleSecureStreak() {
+    if (securing) return;
+    setSecuring(true);
+    try {
+      await secureDailyStreak();
+    } catch (e) {
+      console.error('secureDailyStreak falhou:', e?.message);
+    } finally {
+      setSecuring(false);
+    }
+  }
   // Mesma fonte do gráfico do Diário, para os dois ficarem idênticos.
   const [moodEntries, setMoodEntries] = useState([]);
   const [practiceDates, setPracticeDates] = useState(null);
@@ -107,8 +124,13 @@ export default function Dashboard() {
             <XPBar />
           </View>
 
-          {/* Streak pop — primeiro acesso do dia */}
-          {showStreak && <StreakCard streak={progress.streak} />}
+          {/* Streak em risco — sequência não garantida hoje (tem prioridade) */}
+          {atRisk && (
+            <StreakAtRiskCard streak={progress.streak} onSecure={handleSecureStreak} securing={securing} />
+          )}
+
+          {/* Streak pop — primeiro acesso do dia (oculto quando em risco) */}
+          {showStreak && !atRisk && <StreakCard streak={progress.streak} />}
 
           {/* Featured Challenge — Desafio do Dia */}
           {!loadingChallenge && (

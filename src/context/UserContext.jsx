@@ -211,6 +211,18 @@ export function UserProvider({ children }) {
     notifyNewBadges(prevBadges, updated.unlockedBadges);
   }
 
+  // Garante o streak de login do dia a partir da Home (widget "streak em
+  // risco"). O servidor decide +10 XP e o incremento/reset do streak
+  // (idempotente no dia — chamar de novo não premia duas vezes).
+  async function secureDailyStreak() {
+    const prevBadges = progress.unlockedBadges;
+    const { progress: updated, loginXP } = await progressService.applyLogin();
+    setProgress(updated);
+    if (loginXP > 0) showXpNotification(loginXP);
+    notifyNewBadges(prevBadges, updated.unlockedBadges);
+    return loginXP;
+  }
+
   async function addJournalEntry(mood, text) {
     const prevBadges = progress.unlockedBadges;
     const { entry, progressRow, journalXP } = await journalService.addEntry(mood, text);
@@ -264,6 +276,7 @@ export function UserProvider({ children }) {
     deleteAccount,
     addMoodEntry,
     onSageMessageSent,
+    secureDailyStreak,
     addJournalEntry,
     getJournalEntries,
     completeChallengeToday,
