@@ -15,6 +15,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { Lora_400Regular_Italic } from '@expo-google-fonts/lora';
 import { hasCompletedOnboarding } from '../src/services/onboardingService';
+import { syncReminderOnLaunch } from '../src/services/notificationService';
 import XPToast from '../src/components/XPToast';
 import BadgeToast from '../src/components/BadgeToast';
 
@@ -71,6 +72,11 @@ export default function RootLayout() {
     Inter_800ExtraBold,
     Lora_400Regular_Italic,
   });
+
+  // Reagenda o lembrete diário local (se habilitado) a cada abertura do app.
+  useEffect(() => {
+    syncReminderOnLaunch();
+  }, []);
 
   return (
     <SafeAreaProvider>
