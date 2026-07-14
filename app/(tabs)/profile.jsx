@@ -7,14 +7,20 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { LogOut, Flame, Award, Zap, BookOpen, MessageCircle, Calendar, Shield, Pencil } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import { BADGES } from '../../src/data/badges';
+import { CATEGORY_META } from '../../src/data/challenges';
 import { getUserMessageCount } from '../../src/services/chatService';
+import { getPracticeStats } from '../../src/services/challengeService';
 import XPBar from '../../src/components/XPBar';
 import BadgeCard from '../../src/components/BadgeCard';
+
+// Meta da badge por categoria: 10 práticas concluídas.
+const CATEGORY_BADGE_GOAL = 10;
 
 export default function ProfilePage() {
   const { currentUser, progress, logout } = useUser();
   const router = useRouter();
   const [messageCount, setMessageCount] = useState(0);
+  const [practiceStats, setPracticeStats] = useState({ total: 0, byCategory: {} });
   const [selectedBadge, setSelectedBadge] = useState(null);
   const selectedUnlocked = selectedBadge
     ? (progress.unlockedBadges || []).includes(selectedBadge.id)
@@ -26,6 +32,9 @@ export default function ProfilePage() {
       let active = true;
       getUserMessageCount()
         .then((n) => { if (active) setMessageCount(n); })
+        .catch(() => {});
+      getPracticeStats()
+        .then((s) => { if (active) setPracticeStats(s); })
         .catch(() => {});
       return () => { active = false; };
     }, [])
@@ -101,6 +110,47 @@ export default function ProfilePage() {
             </View>
           ))}
         </View>
+
+        {/* Histórico de práticas por categoria */}
+        <View className="flex-row items-center justify-between mb-3">
+          <Text className="font-bold text-stone-900 text-lg">Práticas concluídas</Text>
+          {practiceStats.total > 0 && (
+            <Text className="text-sm font-semibold text-sage-500">{practiceStats.total} no total</Text>
+          )}
+        </View>
+        {practiceStats.total === 0 ? (
+          <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+            <Text className="text-stone-500 text-sm text-center">
+              Você ainda não concluiu práticas. Comece pelos desafios de hoje 🌱
+            </Text>
+          </View>
+        ) : (
+          <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+            {Object.entries(CATEGORY_META)
+              .map(([key, meta]) => ({ key, meta, count: practiceStats.byCategory[key] || 0 }))
+              .sort((a, b) => b.count - a.count)
+              .map(({ key, meta, count }, idx, arr) => {
+                const pct = Math.min(count / CATEGORY_BADGE_GOAL, 1) * 100;
+                return (
+                  <View
+                    key={key}
+                    style={{ marginBottom: idx === arr.length - 1 ? 0 : 14 }}
+                    accessibilityLabel={`${meta.label}: ${count} ${count === 1 ? 'prática' : 'práticas'}`}
+                  >
+                    <View className="flex-row items-center mb-1.5">
+                      <Text style={{ fontSize: 18, marginRight: 8 }}>{meta.emoji}</Text>
+                      <Text className="flex-1 text-sm font-semibold text-stone-700">{meta.label}</Text>
+                      <Text className="text-sm font-bold" style={{ color: meta.color }}>{count}</Text>
+                    </View>
+                    {/* Progresso rumo à badge da categoria (10 práticas) */}
+                    <View className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: '#F1EEE9' }}>
+                      <View className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: meta.color }} />
+                    </View>
+                  </View>
+                );
+              })}
+          </View>
+        )}
 
         {/* Badges */}
         <Text className="font-bold text-stone-900 text-lg mb-3">Conquistas</Text>

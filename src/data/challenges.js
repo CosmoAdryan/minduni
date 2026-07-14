@@ -166,6 +166,25 @@ export const CATEGORIES = [
   { type: 'relaxation', pool: RELAXATION_CHALLENGES },
 ];
 
+// Metadados de exibição por categoria (rótulo, emoji e cor de destaque).
+// Centralizados aqui para o histórico de práticas (perfil) e os cards de
+// desafio compartilharem a mesma identidade. A cor casa com CATEGORY_STYLE
+// em app/(tabs)/challenges.jsx.
+export const CATEGORY_META = {
+  mindfulness:    { label: 'Atenção plena', emoji: '🧘', color: '#3B82F6' },
+  gratitude:      { label: 'Gratidão',      emoji: '🙏', color: '#D4973E' },
+  breathing:      { label: 'Respiração',    emoji: '🌬️', color: '#6366F1' },
+  thought_record: { label: 'Pensamentos',   emoji: '🧠', color: '#8B5CF6' },
+  grounding:      { label: 'Grounding',     emoji: '🌍', color: '#10B981' },
+  relaxation:     { label: 'Relaxamento',   emoji: '💆', color: '#0891B2' },
+};
+
+// Extrai a categoria a partir do id do desafio (remove o sufixo "_<n>").
+// Ex.: 'breathing_1' -> 'breathing', 'thought_record_1' -> 'thought_record'.
+export function categoryOf(challengeId) {
+  return String(challengeId).replace(/_\d+$/, '');
+}
+
 // 3 desafios por dia, rotacionando entre as 6 categorias: o dia d mostra as
 // categorias d, d+1 e d+2 (mod 6). A combinação muda todo dia e cada categoria
 // aparece 3 dias seguidos e descansa 3 — variedade sem sumir por muito tempo.

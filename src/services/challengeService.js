@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { categoryOf } from '../data/challenges';
 
 async function getCurrentUserId() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -63,6 +64,25 @@ export async function getPracticeDates(days = 30) {
 
   if (error) return new Set();
   return new Set((data || []).map((row) => row.completed_date));
+}
+
+// Histórico de práticas concluídas, agregado por categoria (todo o período).
+// Returns { total, byCategory: { <categoria>: <contagem> } }.
+export async function getPracticeStats() {
+  const userId = await getCurrentUserId();
+  const { data, error } = await supabase
+    .from('challenge_logs')
+    .select('challenge_id')
+    .eq('user_id', userId);
+
+  if (error) return { total: 0, byCategory: {} };
+
+  const byCategory = {};
+  for (const row of data || []) {
+    const cat = categoryOf(row.challenge_id);
+    byCategory[cat] = (byCategory[cat] || 0) + 1;
+  }
+  return { total: (data || []).length, byCategory };
 }
 
 // A conclusão de desafios agora é feita pela RPC gam_complete_challenge
