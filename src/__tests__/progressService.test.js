@@ -62,6 +62,7 @@ describe('dbToProgress', () => {
       days_active: 5,
       chat_streak: 2,
       chat_streak_date: '2026-07-03',
+      tasks_completed_count: 6,
     };
     expect(dbToProgress(row)).toEqual({
       totalXP: 330,
@@ -75,6 +76,7 @@ describe('dbToProgress', () => {
       daysActive: 5,
       chatStreak: 2,
       chatStreakDate: '2026-07-03',
+      tasksCompleted: 6,
     });
   });
 

@@ -4,8 +4,11 @@ import {
   KeyboardAvoidingView, ActivityIndicator, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Send, AlertCircle, X, Sparkles } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import { Send, AlertCircle, X, Sparkles, CalendarPlus, Check } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
+import { toISODate } from '../../src/lib/recurrence';
 import { ChatMessage, TypingIndicator } from '../../src/components/ChatMessage';
 import { detectCrisis } from '../../src/data/chatResponses';
 import CrisisModal from '../../src/components/CrisisModal';
@@ -79,7 +82,11 @@ function moodLoggedToday(moods) {
 }
 
 export default function ChatPage() {
-  const { progress, addMoodEntry, onSageMessageSent, getJournalEntries } = useUser();
+  const { progress, addMoodEntry, onSageMessageSent, getJournalEntries, addTask } = useUser();
+  const router = useRouter();
+  // Sugestões de agenda da última resposta do Sage (efêmeras). Cada item ganha
+  // um card "Adicionar à agenda". `added` marca as já adicionadas nesta sessão.
+  const [suggestions, setSuggestions] = useState([]);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
@@ -183,6 +190,7 @@ export default function ChatPage() {
       timestamp: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, userMsg]);
+    setSuggestions([]); // some sugestões antigas ao enviar nova mensagem
     if (typeof preset !== 'string') setInput('');
 
     // Aplica o streak de mensagem do dia (5->50) e marca a primeira conversa
@@ -195,6 +203,10 @@ export default function ChatPage() {
     try {
       const data = await chatService.sendMessage(sessionId, text, history.slice(-9), activeMood, moodSummary);
       await revealSageMessages(data.response);
+      // Sugestões de agenda vindas do Sage (se houver) viram cards de ação.
+      if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+        setSuggestions(data.suggestions.map((s, i) => ({ ...s, key: `${Date.now()}-${i}`, added: false })));
+      }
     } catch (err) {
       console.error('[Sage error]', err.message);
       setMessages((prev) => [
@@ -216,6 +228,24 @@ export default function ChatPage() {
   function handleSummarizeWeek() {
     if (!weekSummary || typing) return;
     sendToSage('Pode me ajudar a refletir sobre como foi a minha semana?', weekSummary);
+  }
+
+  // Adiciona uma sugestão do Sage à agenda (hoje). Marca o card como adicionado.
+  async function addSuggestionToAgenda(item) {
+    if (item.added) return;
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await addTask({
+        title: item.title,
+        date: toISODate(new Date()),
+        time: item.time || null,
+        recurrence: item.recurrence || 'none',
+        source: 'sage',
+      });
+      setSuggestions((prev) => prev.map((s) => (s.key === item.key ? { ...s, added: true } : s)));
+    } catch (e) {
+      console.error('Falha ao adicionar sugestão à agenda:', e?.message);
+    }
   }
 
   // FlatList invertida: a mensagem mais recente fica em data[0] (no rodapé).
@@ -295,6 +325,42 @@ export default function ChatPage() {
             contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
             keyboardShouldPersistTaps="handled"
           />
+        )}
+
+        {/* Sugestões de agenda do Sage — cards "Adicionar à agenda" */}
+        {suggestions.length > 0 && !typing && (
+          <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4 }}>
+            <View style={{ backgroundColor: '#EEF5F1', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#D4E9DE' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E4D41' }}>Adicionar à sua agenda</Text>
+                <TouchableOpacity
+                  onPress={() => router.push('/agenda')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Abrir a agenda"
+                >
+                  <Text style={{ fontSize: 12, color: '#2D6254', fontWeight: '600' }}>Ver agenda</Text>
+                </TouchableOpacity>
+              </View>
+              {suggestions.map((s) => (
+                <TouchableOpacity
+                  key={s.key}
+                  onPress={() => addSuggestionToAgenda(s)}
+                  disabled={s.added}
+                  accessibilityRole="button"
+                  accessibilityLabel={s.added ? `${s.title} adicionada` : `Adicionar ${s.title} à agenda`}
+                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, marginBottom: 6, opacity: s.added ? 0.6 : 1 }}
+                >
+                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: s.added ? '#D4E9DE' : '#EEF5F1', alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+                    {s.added ? <Check size={15} color="#2D6254" /> : <CalendarPlus size={15} color="#3D7A67" />}
+                  </View>
+                  <Text style={{ flex: 1, fontSize: 13, color: '#3A3731' }} numberOfLines={1}>
+                    {s.time ? `${s.time}  ` : ''}{s.title}
+                  </Text>
+                  {!s.added && <Text style={{ fontSize: 12, color: '#3D7A67', fontWeight: '600' }}>Adicionar</Text>}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         )}
 
         {/* Sugestões de abertura (chips) + resumo da semana */}

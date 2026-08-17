@@ -99,6 +99,8 @@ export async function clearUserData() {
     supabase.from('chat_messages').delete().eq('user_id', uid),
     supabase.from('challenge_logs').delete().eq('user_id', uid),
     supabase.from('journal_entries').delete().eq('user_id', uid),
+    // tasks: as task_completions caem por ON DELETE CASCADE.
+    supabase.from('tasks').delete().eq('user_id', uid),
   ];
   for (const op of ops) {
     const { error } = await op;

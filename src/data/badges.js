@@ -138,6 +138,22 @@ export const BADGES = [
     variant: 'sage',
   },
 
+  // ── Agenda (tarefas concluídas) ─────────────────────────────────────────────
+  {
+    id: 'tasks_5',
+    name: 'Organizado',
+    description: 'Conclua 5 tarefas da agenda',
+    icon: '🗓️',
+    variant: 'sage',
+  },
+  {
+    id: 'tasks_25',
+    name: 'Mestre da Rotina',
+    description: 'Conclua 25 tarefas da agenda',
+    icon: '📅',
+    variant: 'sage',
+  },
+
   // ── Níveis (progressão) ─────────────────────────────────────────────────────
   {
     id: 'level_3',

@@ -26,6 +26,8 @@ export const INITIAL_PROGRESS = {
   // Streak de engajamento no chat (independente do streak de login).
   chatStreak: 0,
   chatStreakDate: null,
+  // Total de ocorrências de tarefas já concluídas (agenda). Alimenta badges.
+  tasksCompleted: 0,
 };
 
 export function calculateLevel(xp) {
@@ -56,6 +58,7 @@ export function dbToProgress(row) {
     daysActive: row.days_active ?? 1,
     chatStreak: row.chat_streak ?? 0,
     chatStreakDate: row.chat_streak_date ?? null,
+    tasksCompleted: row.tasks_completed_count ?? 0,
   };
 }
 
@@ -107,6 +110,17 @@ export async function completeChallenge(challengeId) {
     p_challenge_id: challengeId,
   });
   return { progress, challengeXP: awardedXP };
+}
+
+// Conclui/reabre UMA ocorrência de tarefa (agenda). O XP (+15) é decidido no
+// servidor e concedido só na primeira conclusão da ocorrência; idempotente.
+// Returns { progress, taskXP, done } — taskXP é 0 se já premiado ou ao desmarcar.
+export async function completeTask(taskId, isoDate) {
+  const { progress, awardedXP, raw } = await callRpc('gam_complete_task', {
+    p_task_id: taskId,
+    p_date: isoDate,
+  });
+  return { progress, taskXP: awardedXP, done: raw?.done ?? false };
 }
 
 // Registra um humor (check-in). Sem XP; alimenta badges mood_7/mood_30.

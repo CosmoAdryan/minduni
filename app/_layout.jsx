@@ -35,7 +35,7 @@ function AuthGuard() {
       const inTabs = segments[0] === '(tabs)';
       // Rotas públicas acessíveis em qualquer estado (logado ou não) — não
       // sofrem redirecionamento do guard.
-      const PUBLIC_ROUTES = ['privacy-policy', 'edit-profile'];
+      const PUBLIC_ROUTES = ['privacy-policy', 'edit-profile', 'agenda'];
       if (PUBLIC_ROUTES.includes(segments[0])) return;
 
       const onboardingDone = await hasCompletedOnboarding();

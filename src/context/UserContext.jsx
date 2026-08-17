@@ -5,6 +5,7 @@ import * as accountService from '../services/accountService';
 import * as progressService from '../services/progressService';
 import * as journalService from '../services/journalService';
 import * as challengeService from '../services/challengeService';
+import * as taskService from '../services/taskService';
 import { BADGES } from '../data/badges';
 
 // Re-export LEVELS so existing imports (e.g. XPBar) keep working
@@ -251,6 +252,40 @@ export function UserProvider({ children }) {
     return challengeService.getCompletedToday();
   }
 
+  // --- Agenda / calendário (tarefas e cronogramas) ---
+
+  async function getTasks() {
+    return taskService.getTasks();
+  }
+
+  async function getTaskCompletions(fromISO, toISO) {
+    return taskService.getCompletions(fromISO, toISO);
+  }
+
+  async function addTask(params) {
+    return taskService.addTask(params);
+  }
+
+  async function deleteTask(taskId) {
+    return taskService.deleteTask(taskId);
+  }
+
+  async function getTaskHistory(limit) {
+    return taskService.getHistory(limit);
+  }
+
+  // Marca/desmarca a conclusão de uma ocorrência. O XP e os badges são decididos
+  // no servidor; aqui só refletimos o progresso e disparamos os toasts.
+  // Returns { done } para a UI atualizar o checkbox otimista.
+  async function toggleTaskDone(taskId, isoDate) {
+    const prevBadges = progress.unlockedBadges;
+    const { progress: updated, taskXP, done } = await taskService.toggleCompletion(taskId, isoDate);
+    setProgress(updated);
+    if (taskXP > 0) showXpNotification(taskXP);
+    notifyNewBadges(prevBadges, updated.unlockedBadges);
+    return { done };
+  }
+
   const levelInfo = progressService.calculateLevel(progress.totalXP || 0);
   const nextLevel = LEVELS.find((l) => l.level === levelInfo.level + 1);
 
@@ -281,6 +316,12 @@ export function UserProvider({ children }) {
     getJournalEntries,
     completeChallengeToday,
     getCompletedChallenges,
+    getTasks,
+    getTaskCompletions,
+    addTask,
+    deleteTask,
+    getTaskHistory,
+    toggleTaskDone,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

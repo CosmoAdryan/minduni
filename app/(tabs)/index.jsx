@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { MessageCircle, Target, BookOpen, User, Flame, Award, Zap, ChevronRight } from 'lucide-react-native';
+import { MessageCircle, Target, BookOpen, User, Flame, Award, Zap, ChevronRight, CalendarDays } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../src/context/UserContext';
 import XPBar from '../../src/components/XPBar';
@@ -12,6 +12,7 @@ import StreakCard from '../../src/components/StreakCard';
 import StreakAtRiskCard from '../../src/components/StreakAtRiskCard';
 import MoodChart from '../../src/components/MoodChart';
 import WeeklyInsights from '../../src/components/WeeklyInsights';
+import TodayTasksCard from '../../src/components/TodayTasksCard';
 import { isStreakAtRisk } from '../../src/lib/streak';
 import { getDailyChallenges } from '../../src/data/challenges';
 import { getCompletedToday, getPracticeDates } from '../../src/services/challengeService';
@@ -20,6 +21,7 @@ const QUICK_ACTIONS = [
   { title: 'Conversar com o Sage', icon: MessageCircle, color: '#3D7A67', bg: '#D4E9DE', route: '/chat' },
   { title: 'Práticas', icon: Target, color: '#3D7A67', bg: '#EEF5F1', route: '/challenges' },
   { title: 'Diário', icon: BookOpen, color: '#D4973E', bg: '#FEF8EC', route: '/journal' },
+  { title: 'Agenda', icon: CalendarDays, color: '#3D7A67', bg: '#EEF5F1', route: '/agenda' },
   { title: 'Jornada', icon: User, color: '#5A544C', bg: '#F4F2EE', route: '/profile' },
 ];
 
@@ -166,6 +168,9 @@ export default function Dashboard() {
               )}
             </TouchableOpacity>
           )}
+
+          {/* Agenda de hoje — tarefas/cronograma do dia */}
+          <TodayTasksCard />
 
           {/* Stats Row */}
           <View className="flex-row gap-3 mb-4">
