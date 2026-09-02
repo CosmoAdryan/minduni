@@ -92,6 +92,68 @@ export const BADGES = [
     variant: 'sage',
   },
 
+  // ── Práticas por categoria (10 de cada) ─────────────────────────────────────
+  // Desbloqueadas no servidor (gam_complete_challenge) ao acumular 10 práticas
+  // concluídas de uma mesma categoria. Os ids seguem o padrão '<categoria>_10'.
+  {
+    id: 'mindfulness_10',
+    name: 'Mente Serena',
+    description: 'Complete 10 práticas de atenção plena',
+    icon: '🧘',
+    variant: 'sage',
+  },
+  {
+    id: 'breathing_10',
+    name: 'Fôlego',
+    description: 'Complete 10 exercícios de respiração',
+    icon: '🌬️',
+    variant: 'sage',
+  },
+  {
+    id: 'gratitude_10',
+    name: 'Coração Grato',
+    description: 'Complete 10 práticas de gratidão',
+    icon: '🙏',
+    variant: 'sage',
+  },
+  {
+    id: 'thought_record_10',
+    name: 'Detetive dos Pensamentos',
+    description: 'Complete 10 registros de pensamento',
+    icon: '🧠',
+    variant: 'sage',
+  },
+  {
+    id: 'grounding_10',
+    name: 'Ancorado',
+    description: 'Complete 10 práticas de grounding 5-4-3-2-1',
+    icon: '🌍',
+    variant: 'sage',
+  },
+  {
+    id: 'relaxation_10',
+    name: 'Corpo Leve',
+    description: 'Complete 10 relaxamentos musculares',
+    icon: '💆',
+    variant: 'sage',
+  },
+
+  // ── Agenda (tarefas concluídas) ─────────────────────────────────────────────
+  {
+    id: 'tasks_5',
+    name: 'Organizado',
+    description: 'Conclua 5 tarefas da agenda',
+    icon: '🗓️',
+    variant: 'sage',
+  },
+  {
+    id: 'tasks_25',
+    name: 'Mestre da Rotina',
+    description: 'Conclua 25 tarefas da agenda',
+    icon: '📅',
+    variant: 'sage',
+  },
+
   // ── Níveis (progressão) ─────────────────────────────────────────────────────
   {
     id: 'level_3',

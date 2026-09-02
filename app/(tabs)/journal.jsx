@@ -4,10 +4,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Search, X } from 'lucide-react-native';
+import { Search, X, Flame, Lightbulb, Download } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import MoodOption from '../../src/components/MoodOption';
 import MoodChart from '../../src/components/MoodChart';
+import WeeklyInsights from '../../src/components/WeeklyInsights';
+import { journalStreak } from '../../src/lib/journalInsights';
+import { getDailyPrompt } from '../../src/data/journalPrompts';
+import { getPracticeDates } from '../../src/services/challengeService';
+import { exportJournalPdf } from '../../src/services/journalExportService';
 
 const MOODS = [
   { value: 1, emoji: '😢', label: 'Muito mal' },
@@ -21,7 +26,7 @@ const MOODS = [
 const MOOD_COLORS = ['#3B6FAB', '#6B8FAB', '#888787', '#5E9B84', '#C9963A'];
 
 export default function JournalPage() {
-  const { addJournalEntry, getJournalEntries } = useUser();
+  const { addJournalEntry, getJournalEntries, currentUser } = useUser();
   const [selectedMood, setSelectedMood] = useState(null);
   const [text, setText] = useState('');
   const [entries, setEntries] = useState([]);
@@ -30,10 +35,29 @@ export default function JournalPage() {
   const [toast, setToast] = useState(null);
   const [filterMood, setFilterMood] = useState(null);
   const [searchText, setSearchText] = useState('');
+  const [practiceDates, setPracticeDates] = useState(null);
+  const [exporting, setExporting] = useState(false);
+
+  const dailyPrompt = getDailyPrompt();
+  const streak = journalStreak(entries);
 
   useEffect(() => {
     loadEntries();
+    // Datas de prática para a correlação humor × prática (falha silenciosa).
+    getPracticeDates(30).then(setPracticeDates).catch(() => {});
   }, []);
+
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await exportJournalPdf(entries, currentUser?.name);
+    } catch (e) {
+      showToast('error', '❌ Não foi possível exportar o diário.');
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function loadEntries() {
     setLoadingEntries(true);
@@ -79,7 +103,19 @@ export default function JournalPage() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        <Text className="text-2xl font-bold text-stone-900 mb-4">Diário emocional</Text>
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-2xl font-bold text-stone-900">Diário emocional</Text>
+          {streak > 0 && (
+            <View
+              className="flex-row items-center bg-orange-50 rounded-full px-3 py-1.5"
+              accessibilityLabel={`Sequência de diário: ${streak} ${streak === 1 ? 'dia' : 'dias'}`}
+            >
+              <Flame size={15} color="#F97316" />
+              <Text className="ml-1 text-sm font-bold text-orange-500">{streak}</Text>
+              <Text className="ml-1 text-xs text-orange-400">{streak === 1 ? 'dia' : 'dias'}</Text>
+            </View>
+          )}
+        </View>
 
         {/* Toast */}
         {toast && (
@@ -121,6 +157,17 @@ export default function JournalPage() {
         {/* Text input */}
         <View className="bg-white rounded-2xl p-4 shadow-sm mb-4">
           <Text className="font-semibold text-stone-700 mb-2">O que está no seu coração?</Text>
+          {text.trim().length === 0 && (
+            <TouchableOpacity
+              className="flex-row items-center bg-sage-50 rounded-xl px-3 py-2.5 mb-2"
+              onPress={() => setText(`${dailyPrompt}\n\n`)}
+              accessibilityLabel={`Escrever a partir da pergunta: ${dailyPrompt}`}
+              accessibilityRole="button"
+            >
+              <Lightbulb size={16} color="#3D7A67" style={{ marginRight: 8 }} />
+              <Text className="flex-1 text-sm text-sage-700 italic">{dailyPrompt}</Text>
+            </TouchableOpacity>
+          )}
           <TextInput
             className="bg-stone-100 border border-stone-200 rounded-xl p-3 text-stone-900 min-h-28"
             placeholder="Escreva livremente sobre como está se sentindo..."
@@ -153,10 +200,31 @@ export default function JournalPage() {
         {/* Mood Chart */}
         <MoodChart data={entries} containerStyle={{ marginBottom: 16 }} />
 
+        {/* Insights da semana + correlação humor × prática */}
+        <WeeklyInsights entries={entries} practiceDates={practiceDates} containerStyle={{ marginBottom: 16 }} />
+
         {/* History with filter + search */}
         {entries.length > 0 && (
           <>
-            <Text className="font-semibold text-stone-900 mb-3">Histórico</Text>
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="font-semibold text-stone-900">Histórico</Text>
+              <TouchableOpacity
+                className="flex-row items-center bg-white border border-stone-200 rounded-full px-3 py-1.5"
+                onPress={handleExport}
+                disabled={exporting}
+                accessibilityRole="button"
+                accessibilityLabel="Exportar diário em PDF"
+              >
+                {exporting ? (
+                  <ActivityIndicator size="small" color="#3D7A67" />
+                ) : (
+                  <>
+                    <Download size={14} color="#3D7A67" style={{ marginRight: 6 }} />
+                    <Text className="text-sm font-semibold" style={{ color: '#2D6254' }}>Exportar</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
 
             {/* Emoji filter row */}
             <View style={{ flexDirection: 'row', marginBottom: 10, gap: 8, flexWrap: 'wrap' }}>

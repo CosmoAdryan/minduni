@@ -18,7 +18,6 @@
       }
     },
     "production": {
-      "distribution": "internal",
       "android": {
         "buildType": "app-bundle"
       }

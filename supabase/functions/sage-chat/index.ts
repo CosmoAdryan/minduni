@@ -6,9 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// TEMPORÁRIO (testes): preview tem 500 req/dia no plano grátis vs 20 do
-// gemini-2.5-flash. Ao ligar billing, voltar para 'gemini-2.5-flash'.
-const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview';
+// Modelo do Sage: Gemini 3.1 Flash Lite (versão estável) — rápido e barato
+// (US$ 0,25/1M in, US$ 1,50/1M out), adequado a diálogos curtos de apoio.
+// Exige billing ativo no Google. Se a API rejeitar o id estável, a alternativa
+// é 'gemini-3.1-flash-lite-preview'.
+const GEMINI_MODEL = 'gemini-3.1-flash-lite';
 
 const SYSTEM_PROMPT = `Você é o Sage, assistente de bem-estar emocional baseado em Terapia Cognitivo-Comportamental (TCC) para estudantes universitários brasileiros. É empático, acolhedor e sem julgamentos. Você APOIA, não substitui psicólogos.
 
@@ -28,7 +30,14 @@ FORMATO DAS RESPOSTAS (importante):
 - Escreva como num chat real: mensagens curtas e humanas, no máximo 2 a 3 parágrafos de 1 a 3 frases.
 - Cada parágrafo será exibido como uma bolha separada: separe parágrafos com UMA linha em branco.
 - Faça no máximo UMA pergunta por resposta. Não use markdown (nada de **negrito**, listas ou asteriscos).
-- Português brasileiro, linguagem simples e calorosa.`;
+- Português brasileiro, linguagem simples e calorosa.
+
+AGENDA (organização do dia): quando o usuário pedir ajuda para organizar o dia/semana OU quando você sugerir atividades concretas que valham a pena agendar (respiração, pausa, estudo, caminhada, sono etc.), inclua NO FINAL da sua resposta um bloco técnico oculto, exatamente neste formato:
+[[AGENDA]]
+HH:MM | Título curto da atividade | none
+...
+[[/AGENDA]]
+Regras do bloco: no máximo 4 linhas; uma atividade por linha; a hora (HH:MM) é opcional — se não fizer sentido, deixe vazio antes da primeira barra; o terceiro campo é a recorrência e deve ser none, daily ou weekly (use daily/weekly só se você sugeriu repetir). Escreva o bloco apenas quando fizer sentido agendar algo; caso contrário, não o inclua. Nunca mencione o bloco na conversa nem o inclua em respostas de crise.`;
 
 // Rótulos de humor compartilhados entre a saudação e o contexto da conversa.
 const MOOD_LABELS: Record<number, string> = {
@@ -49,6 +58,43 @@ const CRISIS_KEYWORDS = [
 function detectCrisis(message: string): boolean {
   const lower = message.toLowerCase();
   return CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+type AgendaSuggestion = { time: string | null; title: string; recurrence: 'none' | 'daily' | 'weekly' };
+
+// Extrai o bloco [[AGENDA]]...[[/AGENDA]] do texto do Sage. Devolve o texto
+// VISÍVEL (sem o bloco) e as sugestões estruturadas para o app oferecer como
+// cards "Adicionar à agenda". Tolerante: bloco ausente/malformado -> [].
+function parseAgendaBlock(text: string): { visibleText: string; suggestions: AgendaSuggestion[] } {
+  const raw = text || '';
+  const match = raw.match(/\[\[AGENDA\]\]([\s\S]*?)\[\[\/AGENDA\]\]/i);
+  if (!match) return { visibleText: raw.trim(), suggestions: [] };
+
+  const suggestions: AgendaSuggestion[] = [];
+  for (const line of match[1].split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const parts = trimmed.split('|').map((s) => s.trim());
+    // Aceita "Título" ou "HH:MM | Título | recorrência" (campos ausentes tolerados).
+    let time: string | null = null;
+    let title = '';
+    let recurrence: 'none' | 'daily' | 'weekly' = 'none';
+    if (parts.length === 1) {
+      title = parts[0];
+    } else {
+      time = /^\d{1,2}:\d{2}$/.test(parts[0]) ? parts[0].padStart(5, '0') : null;
+      title = parts[1] || '';
+      const rec = (parts[2] || '').toLowerCase();
+      recurrence = rec === 'daily' || rec === 'weekly' ? rec : 'none';
+    }
+    title = title.replace(/^[-*•]\s*/, '').slice(0, 120).trim();
+    if (title) suggestions.push({ time, title, recurrence });
+    if (suggestions.length >= 4) break;
+  }
+
+  // Remove o bloco do texto visível (e limpa linhas em branco sobrando).
+  const visibleText = raw.replace(/\[\[AGENDA\]\][\s\S]*?\[\[\/AGENDA\]\]/i, '').replace(/\n{3,}/g, '\n\n').trim();
+  return { visibleText, suggestions };
 }
 
 // A cada quantas mensagens do usuário o resumo rolante é regenerado.
@@ -201,6 +247,10 @@ serve(async (req) => {
     const { session_id, message, history, intro } = body;
     // Humor: só aceita inteiro 1–5; qualquer outra coisa vira null.
     const mood = Number.isInteger(body.mood) && body.mood >= 1 && body.mood <= 5 ? body.mood : null;
+    // Resumo semanal de humor, opcional ("Resumir minha semana"): dado real do
+    // diário injetado no contexto (não no histórico visível). Não confiável:
+    // valida tipo e trunca.
+    const moodSummary = typeof body.mood_summary === 'string' ? body.mood_summary.slice(0, 600).trim() : '';
 
     // A sessão precisa existir E pertencer ao usuário. A consulta usa o client
     // com o JWT do usuário, então a RLS só enxerga as sessões dele — session_id
@@ -339,6 +389,12 @@ serve(async (req) => {
       ? `\n\nRESUMO DO QUE JÁ CONVERSARAM (use para manter continuidade; não repita de volta literalmente): ${sessionSummary}`
       : '';
 
+    // Resumo semanal de humor ("Resumir minha semana"): dado real do diário.
+    // Peça ao Sage para refletir com o usuário sobre padrões e altos/baixos.
+    const weeklyMoodContext = moodSummary
+      ? `\n\nHUMOR DA SEMANA (o usuário pediu para refletir sobre a própria semana; use estes dados reais do diário dele, comente padrões e altos e baixos com gentileza, valide os sentimentos e faça no máximo UMA pergunta): ${moodSummary}`
+      : '';
+
     // Build Gemini history — Gemini requires contents to start with 'user'.
     // O history vem do cliente: limita a quantidade de itens e o tamanho de
     // cada um antes de montar o prompt (contém o custo e o abuso).
@@ -369,7 +425,7 @@ serve(async (req) => {
     const geminiHistory = firstUserIdx >= 0 ? merged.slice(firstUserIdx).slice(-9) : [];
 
     const geminiBody = {
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT + moodContext + summaryContext }] },
+      system_instruction: { parts: [{ text: SYSTEM_PROMPT + moodContext + summaryContext + weeklyMoodContext }] },
       contents: [
         ...geminiHistory,
         { role: 'user', parts: [{ text: message }] },
@@ -395,13 +451,19 @@ serve(async (req) => {
       throw new Error('UPSTREAM_ERROR');
     }
 
-    const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!responseText) {
+    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
       console.error('Gemini returned no text:', JSON.stringify(geminiData).slice(0, 500));
       throw new Error('UPSTREAM_ERROR');
     }
 
-    // Save model response
+    // Separa o texto visível das sugestões de agenda (bloco oculto). Só o texto
+    // visível é persistido/exibido; as sugestões são efêmeras (o app oferece
+    // cards "Adicionar à agenda" na hora).
+    const { visibleText, suggestions } = parseAgendaBlock(rawText);
+    const responseText = visibleText || rawText;
+
+    // Save model response (sem o bloco técnico)
     await supabase.from('chat_messages').insert({
       session_id,
       user_id: userId,
@@ -414,7 +476,7 @@ serve(async (req) => {
     await refreshSummary(supabase, session_id, sessionSummary, sessionRow?.summarized_until ?? null);
 
     return new Response(
-      JSON.stringify({ response: responseText }),
+      JSON.stringify({ response: responseText, suggestions }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

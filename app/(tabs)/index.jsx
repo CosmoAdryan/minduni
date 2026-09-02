@@ -4,30 +4,51 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { MessageCircle, Target, BookOpen, User, Flame, Award, Zap, ChevronRight } from 'lucide-react-native';
+import { MessageCircle, Target, BookOpen, User, Flame, Award, Zap, ChevronRight, CalendarDays } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../src/context/UserContext';
 import XPBar from '../../src/components/XPBar';
 import StreakCard from '../../src/components/StreakCard';
+import StreakAtRiskCard from '../../src/components/StreakAtRiskCard';
 import MoodChart from '../../src/components/MoodChart';
+import WeeklyInsights from '../../src/components/WeeklyInsights';
+import TodayTasksCard from '../../src/components/TodayTasksCard';
+import { isStreakAtRisk } from '../../src/lib/streak';
 import { getDailyChallenges } from '../../src/data/challenges';
-import { getCompletedToday } from '../../src/services/challengeService';
+import { getCompletedToday, getPracticeDates } from '../../src/services/challengeService';
 
 const QUICK_ACTIONS = [
   { title: 'Conversar com o Sage', icon: MessageCircle, color: '#3D7A67', bg: '#D4E9DE', route: '/chat' },
   { title: 'Práticas', icon: Target, color: '#3D7A67', bg: '#EEF5F1', route: '/challenges' },
   { title: 'Diário', icon: BookOpen, color: '#D4973E', bg: '#FEF8EC', route: '/journal' },
+  { title: 'Agenda', icon: CalendarDays, color: '#3D7A67', bg: '#EEF5F1', route: '/agenda' },
   { title: 'Jornada', icon: User, color: '#5A544C', bg: '#F4F2EE', route: '/profile' },
 ];
 
 export default function Dashboard() {
-  const { currentUser, progress, loading, getJournalEntries } = useUser();
+  const { currentUser, progress, loading, getJournalEntries, secureDailyStreak } = useUser();
   const router = useRouter();
   const [featuredChallenge, setFeaturedChallenge] = useState(null);
   const [loadingChallenge, setLoadingChallenge] = useState(true);
   const [showStreak, setShowStreak] = useState(false);
+  const [securing, setSecuring] = useState(false);
+
+  const atRisk = isStreakAtRisk(progress);
+
+  async function handleSecureStreak() {
+    if (securing) return;
+    setSecuring(true);
+    try {
+      await secureDailyStreak();
+    } catch (e) {
+      console.error('secureDailyStreak falhou:', e?.message);
+    } finally {
+      setSecuring(false);
+    }
+  }
   // Mesma fonte do gráfico do Diário, para os dois ficarem idênticos.
   const [moodEntries, setMoodEntries] = useState([]);
+  const [practiceDates, setPracticeDates] = useState(null);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -39,6 +60,9 @@ export default function Dashboard() {
       let active = true;
       getJournalEntries()
         .then((d) => { if (active) setMoodEntries(d); })
+        .catch(() => {});
+      getPracticeDates(30)
+        .then((s) => { if (active) setPracticeDates(s); })
         .catch(() => {});
       return () => { active = false; };
     }, [])
@@ -102,8 +126,13 @@ export default function Dashboard() {
             <XPBar />
           </View>
 
-          {/* Streak pop — primeiro acesso do dia */}
-          {showStreak && <StreakCard streak={progress.streak} />}
+          {/* Streak em risco — sequência não garantida hoje (tem prioridade) */}
+          {atRisk && (
+            <StreakAtRiskCard streak={progress.streak} onSecure={handleSecureStreak} securing={securing} />
+          )}
+
+          {/* Streak pop — primeiro acesso do dia (oculto quando em risco) */}
+          {showStreak && !atRisk && <StreakCard streak={progress.streak} />}
 
           {/* Featured Challenge — Desafio do Dia */}
           {!loadingChallenge && (
@@ -139,6 +168,9 @@ export default function Dashboard() {
               )}
             </TouchableOpacity>
           )}
+
+          {/* Agenda de hoje — tarefas/cronograma do dia */}
+          <TodayTasksCard />
 
           {/* Stats Row */}
           <View className="flex-row gap-3 mb-4">
@@ -181,6 +213,9 @@ export default function Dashboard() {
 
           {/* Mood Chart */}
           <MoodChart data={moodEntries} />
+
+          {/* Insights da semana + correlação humor × prática */}
+          <WeeklyInsights entries={moodEntries} practiceDates={practiceDates} containerStyle={{ marginTop: 16 }} />
         </View>
       </ScrollView>
     </SafeAreaView>

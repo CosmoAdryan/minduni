@@ -110,8 +110,10 @@ export async function getIntroMessage(sessionId, mood) {
 }
 
 // Returns { response: string, crisis?: boolean }
-export async function sendMessage(sessionId, message, history, mood) {
-  const response = await postToSage({ session_id: sessionId, message, history, mood });
+// `moodSummary` (opcional): resumo textual do humor da semana, injetado no
+// contexto do Sage sem virar bolha visível (usado por "Resumir minha semana").
+export async function sendMessage(sessionId, message, history, mood, moodSummary) {
+  const response = await postToSage({ session_id: sessionId, message, history, mood, mood_summary: moodSummary });
 
   const data = await response.json();
 

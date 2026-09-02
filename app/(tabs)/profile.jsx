@@ -1,21 +1,59 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Alert, Modal, Image,
+  View, Text, ScrollView, TouchableOpacity, Alert, Modal, Image, Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { LogOut, Flame, Award, Zap, BookOpen, MessageCircle, Calendar, Shield, Pencil } from 'lucide-react-native';
+import { LogOut, Flame, Award, Zap, BookOpen, MessageCircle, Calendar, Shield, Pencil, Bell } from 'lucide-react-native';
 import { useUser } from '../../src/context/UserContext';
 import { BADGES } from '../../src/data/badges';
+import { CATEGORY_META } from '../../src/data/challenges';
 import { getUserMessageCount } from '../../src/services/chatService';
+import { getPracticeStats } from '../../src/services/challengeService';
+import {
+  getReminderPrefs, setReminderEnabled, setReminderTime, REMINDER_PRESETS,
+} from '../../src/services/notificationService';
 import XPBar from '../../src/components/XPBar';
 import BadgeCard from '../../src/components/BadgeCard';
+
+// Meta da badge por categoria: 10 práticas concluídas.
+const CATEGORY_BADGE_GOAL = 10;
 
 export default function ProfilePage() {
   const { currentUser, progress, logout } = useUser();
   const router = useRouter();
   const [messageCount, setMessageCount] = useState(0);
+  const [practiceStats, setPracticeStats] = useState({ total: 0, byCategory: {} });
   const [selectedBadge, setSelectedBadge] = useState(null);
+  // Lembrete diário local (engajamento).
+  const [reminderEnabled, setReminderEnabledState] = useState(false);
+  const [reminderTime, setReminderTimeState] = useState('20:00');
+
+  useEffect(() => {
+    let active = true;
+    getReminderPrefs()
+      .then((p) => { if (active) { setReminderEnabledState(p.enabled); setReminderTimeState(p.time); } })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  async function toggleReminder(value) {
+    // Otimista: reflete na UI e reverte se a permissão for negada.
+    setReminderEnabledState(value);
+    const { enabled, denied } = await setReminderEnabled(value, reminderTime);
+    setReminderEnabledState(enabled);
+    if (denied) {
+      Alert.alert(
+        'Permissão necessária',
+        'Para receber lembretes, ative as notificações do MindUni nas configurações do seu aparelho.',
+      );
+    }
+  }
+
+  async function pickTime(time) {
+    setReminderTimeState(time);
+    await setReminderTime(time);
+  }
   const selectedUnlocked = selectedBadge
     ? (progress.unlockedBadges || []).includes(selectedBadge.id)
     : false;
@@ -26,6 +64,9 @@ export default function ProfilePage() {
       let active = true;
       getUserMessageCount()
         .then((n) => { if (active) setMessageCount(n); })
+        .catch(() => {});
+      getPracticeStats()
+        .then((s) => { if (active) setPracticeStats(s); })
         .catch(() => {});
       return () => { active = false; };
     }, [])
@@ -102,6 +143,47 @@ export default function ProfilePage() {
           ))}
         </View>
 
+        {/* Histórico de práticas por categoria */}
+        <View className="flex-row items-center justify-between mb-3">
+          <Text className="font-bold text-stone-900 text-lg">Práticas concluídas</Text>
+          {practiceStats.total > 0 && (
+            <Text className="text-sm font-semibold text-sage-500">{practiceStats.total} no total</Text>
+          )}
+        </View>
+        {practiceStats.total === 0 ? (
+          <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+            <Text className="text-stone-500 text-sm text-center">
+              Você ainda não concluiu práticas. Comece pelos desafios de hoje 🌱
+            </Text>
+          </View>
+        ) : (
+          <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+            {Object.entries(CATEGORY_META)
+              .map(([key, meta]) => ({ key, meta, count: practiceStats.byCategory[key] || 0 }))
+              .sort((a, b) => b.count - a.count)
+              .map(({ key, meta, count }, idx, arr) => {
+                const pct = Math.min(count / CATEGORY_BADGE_GOAL, 1) * 100;
+                return (
+                  <View
+                    key={key}
+                    style={{ marginBottom: idx === arr.length - 1 ? 0 : 14 }}
+                    accessibilityLabel={`${meta.label}: ${count} ${count === 1 ? 'prática' : 'práticas'}`}
+                  >
+                    <View className="flex-row items-center mb-1.5">
+                      <Text style={{ fontSize: 18, marginRight: 8 }}>{meta.emoji}</Text>
+                      <Text className="flex-1 text-sm font-semibold text-stone-700">{meta.label}</Text>
+                      <Text className="text-sm font-bold" style={{ color: meta.color }}>{count}</Text>
+                    </View>
+                    {/* Progresso rumo à badge da categoria (10 práticas) */}
+                    <View className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: '#F1EEE9' }}>
+                      <View className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: meta.color }} />
+                    </View>
+                  </View>
+                );
+              })}
+          </View>
+        )}
+
         {/* Badges */}
         <Text className="font-bold text-stone-900 text-lg mb-3">Conquistas</Text>
         <View className="flex-row flex-wrap mb-6">
@@ -113,6 +195,56 @@ export default function ProfilePage() {
               onPress={() => setSelectedBadge(badge)}
             />
           ))}
+        </View>
+
+        {/* Lembrete diário */}
+        <Text className="font-bold text-stone-900 text-lg mb-3">Lembretes</Text>
+        <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+          <View className="flex-row items-center">
+            <View className="w-10 h-10 rounded-2xl items-center justify-center mr-3" style={{ backgroundColor: '#EEF5F1' }}>
+              <Bell size={20} color="#3D7A67" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-semibold text-stone-800">Lembrete diário</Text>
+              <Text className="text-xs text-stone-500 mt-0.5">Um empurrãozinho para seu check-in de humor</Text>
+            </View>
+            <Switch
+              value={reminderEnabled}
+              onValueChange={toggleReminder}
+              trackColor={{ false: '#E6E2DB', true: '#A9D3BF' }}
+              thumbColor={reminderEnabled ? '#3D7A67' : '#FAFAF8'}
+              accessibilityLabel="Ativar lembrete diário"
+            />
+          </View>
+
+          {reminderEnabled && (
+            <View className="mt-4 pt-4 border-t border-stone-100">
+              <Text className="text-xs font-semibold text-stone-500 mb-2">HORÁRIO</Text>
+              <View className="flex-row gap-2">
+                {REMINDER_PRESETS.map(({ label, time }) => {
+                  const selected = reminderTime === time;
+                  return (
+                    <TouchableOpacity
+                      key={time}
+                      className="flex-1 py-2.5 rounded-xl items-center"
+                      style={{
+                        backgroundColor: selected ? '#3D7A67' : '#F4F2EE',
+                        borderWidth: selected ? 0 : 1,
+                        borderColor: '#E6E2DB',
+                      }}
+                      onPress={() => pickTime(time)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={`Lembrete às ${time}, ${label}`}
+                    >
+                      <Text className="text-sm font-semibold" style={{ color: selected ? 'white' : '#57534E' }}>{label}</Text>
+                      <Text className="text-xs mt-0.5" style={{ color: selected ? 'rgba(255,255,255,0.8)' : '#A29D95' }}>{time}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Política de Privacidade */}

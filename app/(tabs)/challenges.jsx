@@ -164,8 +164,23 @@ function MindfulnessChallenge({ challenge, onComplete, onClose }) {
   );
 }
 
-function GratitudeChallenge({ challenge, onComplete, onClose }) {
-  const [answers, setAnswers] = useState(['', '', '']);
+// Desafios de escrita guiada (gratidão e registro de pensamentos): mesma
+// mecânica de prompts, cores e rótulos por tipo. Cores em hex via style —
+// classes dinâmicas do NativeWind quebravam no build (ver src/data/badges.js).
+const PROMPT_THEMES = {
+  gratitude: {
+    label: '#A16207', inputBg: '#FEFCE8', inputBorder: '#FDE68A',
+    button: '#EAB308', cta: 'Salvar gratidões', noun: 'Gratidão',
+  },
+  thought_record: {
+    label: '#6D28D9', inputBg: '#F5F3FF', inputBorder: '#DDD6FE',
+    button: '#8B5CF6', cta: 'Salvar registro', noun: 'Registro',
+  },
+};
+
+function PromptChallenge({ challenge, type, onComplete, onClose }) {
+  const theme = PROMPT_THEMES[type];
+  const [answers, setAnswers] = useState(challenge.prompts.map(() => ''));
   const allFilled = answers.every((a) => a.trim().length > 0);
 
   return (
@@ -179,9 +194,10 @@ function GratitudeChallenge({ challenge, onComplete, onClose }) {
       <ScrollView className="flex-1">
         {challenge.prompts.map((prompt, i) => (
           <View key={i} className="mb-4">
-            <Text className="text-sm font-medium text-yellow-700 mb-2">{prompt}</Text>
+            <Text className="text-sm font-medium mb-2" style={{ color: theme.label }}>{prompt}</Text>
             <TextInput
-              className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-stone-900 min-h-16"
+              className="border rounded-xl p-3 text-stone-900 min-h-16"
+              style={{ backgroundColor: theme.inputBg, borderColor: theme.inputBorder }}
               placeholder="Escreva aqui..."
               placeholderTextColor="#A29D95"
               value={answers[i]}
@@ -191,23 +207,170 @@ function GratitudeChallenge({ challenge, onComplete, onClose }) {
                 setAnswers(updated);
               }}
               multiline
-              accessibilityLabel={`Gratidão ${i + 1}: ${prompt}`}
+              accessibilityLabel={`${theme.noun} ${i + 1}: ${prompt}`}
             />
           </View>
         ))}
       </ScrollView>
       <TouchableOpacity
-        className={`py-4 rounded-2xl items-center mt-4 ${allFilled ? 'bg-yellow-500' : 'bg-stone-200'}`}
+        className="py-4 rounded-2xl items-center mt-4"
+        style={{ backgroundColor: allFilled ? theme.button : '#E7E5E4' }}
         onPress={onComplete}
         disabled={!allFilled}
-        accessibilityLabel={`Salvar gratidões e ganhar ${challenge.xp} XP`}
+        accessibilityLabel={`${theme.cta} e ganhar ${challenge.xp} XP`}
         accessibilityRole="button"
         accessibilityState={{ disabled: !allFilled }}
       >
         <Text className={`font-bold ${allFilled ? 'text-white' : 'text-stone-400'}`}>
-          Salvar gratidões (+{challenge.xp} XP)
+          {theme.cta} (+{challenge.xp} XP)
         </Text>
       </TouchableOpacity>
+    </View>
+  );
+}
+
+// Grounding 5-4-3-2-1: passa pelos 5 sentidos no ritmo do usuário.
+function GroundingChallenge({ challenge, onComplete, onClose }) {
+  const [step, setStep] = useState(0);
+  const senses = challenge.senses;
+  const current = senses[step];
+  const isLast = step === senses.length - 1;
+
+  function advance() {
+    Haptics.selectionAsync().catch(() => {});
+    if (isLast) onComplete();
+    else setStep(step + 1);
+  }
+
+  return (
+    <View className="flex-1 p-6">
+      <View className="flex-row justify-between items-center mb-6">
+        <Text className="text-xl font-bold text-stone-900">{challenge.title}</Text>
+        <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar desafio" accessibilityRole="button">
+          <X size={24} color="#756F66" />
+        </TouchableOpacity>
+      </View>
+      <View className="flex-1 items-center justify-center">
+        <Text style={{ fontSize: 56 }}>{current.icon}</Text>
+        <Text className="text-5xl font-bold text-emerald-600 mt-4">{current.count}</Text>
+        <Text className="text-xl font-semibold text-stone-900 mt-1 text-center">
+          {current.label}
+        </Text>
+        <Text className="text-stone-500 mt-4 text-center leading-6">
+          {current.instruction}
+        </Text>
+      </View>
+      {/* Pontos de progresso */}
+      <View className="flex-row justify-center gap-2 mb-6">
+        {senses.map((s, i) => (
+          <View
+            key={i}
+            className="h-2 rounded-full"
+            style={{ width: i === step ? 24 : 8, backgroundColor: i <= step ? '#10B981' : '#E7E5E4' }}
+          />
+        ))}
+      </View>
+      <TouchableOpacity
+        className="py-4 rounded-2xl items-center"
+        style={{ backgroundColor: '#10B981' }}
+        onPress={advance}
+        accessibilityLabel={isLast ? `Concluir grounding e ganhar ${challenge.xp} XP` : 'Próximo sentido'}
+        accessibilityRole="button"
+      >
+        <Text className="text-white font-bold">
+          {isLast ? `Concluir (+${challenge.xp} XP)` : 'Encontrei! Próximo'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// Relaxamento muscular progressivo: para cada grupo, tensiona (âmbar) e
+// solta (sage), com countdown e haptics marcando as trocas de fase.
+function MuscleRelaxationChallenge({ challenge, onComplete, onClose }) {
+  const [active, setActive] = useState(false);
+  const [groupIdx, setGroupIdx] = useState(0);
+  const [phase, setPhase] = useState('tense'); // 'tense' | 'release'
+  const [countdown, setCountdown] = useState(null);
+  const timerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  function runPhase(gIdx, ph) {
+    if (gIdx >= challenge.groups.length) {
+      setActive(false);
+      onComplete();
+      return;
+    }
+    setGroupIdx(gIdx);
+    setPhase(ph);
+    const total = ph === 'tense' ? challenge.tenseSeconds : challenge.releaseSeconds;
+    setCountdown(total);
+    Haptics.impactAsync(
+      ph === 'tense' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light
+    ).catch(() => {});
+
+    let remaining = total;
+    const tick = () => {
+      remaining--;
+      setCountdown(remaining);
+      if (remaining <= 0) {
+        if (ph === 'tense') runPhase(gIdx, 'release');
+        else runPhase(gIdx + 1, 'tense');
+      } else {
+        timerRef.current = setTimeout(tick, 1000);
+      }
+    };
+    timerRef.current = setTimeout(tick, 1000);
+  }
+
+  const group = challenge.groups[groupIdx];
+  const isTense = phase === 'tense';
+  const circleColor = !active ? '#A5F3FC' : isTense ? '#D97706' : '#3D7A67';
+
+  return (
+    <View className="flex-1 p-6 items-center">
+      <View className="flex-row justify-between items-center w-full mb-6">
+        <Text className="text-xl font-bold text-stone-900">{challenge.title}</Text>
+        <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar desafio" accessibilityRole="button">
+          <X size={24} color="#756F66" />
+        </TouchableOpacity>
+      </View>
+      <View className="flex-1 items-center justify-center">
+        <View
+          className="w-36 h-36 rounded-full items-center justify-center"
+          style={{ backgroundColor: circleColor }}
+          accessibilityLabel={active ? `${isTense ? 'Tensione' : 'Solte'}: ${countdown} segundos` : 'Círculo de relaxamento'}
+        >
+          <Text className="text-white text-3xl font-bold" style={{ fontVariant: ['tabular-nums'] }}>
+            {active && countdown !== null ? countdown : ''}
+          </Text>
+        </View>
+        <Text className="text-2xl font-bold text-stone-900 mt-8">
+          {active ? (isTense ? 'Tensione' : 'Solte e relaxe') : 'Pronto?'}
+        </Text>
+        <Text className="text-stone-500 mt-2 text-center">
+          {active
+            ? isTense
+              ? `${group.name}: ${group.instruction.toLowerCase()}`
+              : 'Solte de uma vez e sinta a tensão indo embora'
+            : 'Encontre uma posição confortável e toque em iniciar'}
+        </Text>
+        <Text className="font-semibold mt-4" style={{ color: '#0891B2' }}>
+          Grupo: {Math.min(groupIdx + 1, challenge.groups.length)}/{challenge.groups.length}
+        </Text>
+      </View>
+      {!active && (
+        <TouchableOpacity
+          className="w-full py-4 rounded-2xl items-center"
+          style={{ backgroundColor: '#0891B2' }}
+          onPress={() => { setActive(true); runPhase(0, 'tense'); }}
+          accessibilityLabel="Iniciar relaxamento muscular"
+          accessibilityRole="button"
+        >
+          <Text className="text-white font-bold">Iniciar relaxamento</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -352,12 +515,21 @@ function BreathingChallenge({ challenge, onComplete, onClose }) {
   );
 }
 
+// Cor de destaque e fundo do card por categoria de desafio.
+const CATEGORY_STYLE = {
+  mindfulness: { color: '#3B82F6', bg: '#EFF6FF' },
+  gratitude: { color: '#D4973E', bg: '#FFFBEB' },
+  breathing: { color: '#6366F1', bg: '#EEF2FF' },
+  thought_record: { color: '#8B5CF6', bg: '#F5F3FF' },
+  grounding: { color: '#10B981', bg: '#ECFDF5' },
+  relaxation: { color: '#0891B2', bg: '#ECFEFF' },
+};
+
 export default function ChallengesPage() {
   const { completeChallengeToday, getCompletedChallenges } = useUser();
   const [completed, setCompleted] = useState([]);
   const [active, setActive] = useState(null);
   const [weekData, setWeekData] = useState([false, false, false, false, false, false, false]);
-  const challenges = getDailyChallenges();
 
   useEffect(() => {
     loadData();
@@ -380,11 +552,10 @@ export default function ChallengesPage() {
     loadData();
   }
 
-  const challengeList = [
-    { ...challenges.mindfulness, type: 'mindfulness', color: '#3B82F6', bg: '#EFF6FF' },
-    { ...challenges.gratitude, type: 'gratitude', color: '#D4973E', bg: '#FFFBEB' },
-    { ...challenges.breathing, type: 'breathing', color: '#6366F1', bg: '#EEF2FF' },
-  ];
+  const challengeList = getDailyChallenges().map((ch) => ({
+    ...ch,
+    ...CATEGORY_STYLE[ch.type],
+  }));
 
   const completedCount = challengeList.filter((c) => completed.includes(c.id)).length;
 
@@ -392,13 +563,13 @@ export default function ChallengesPage() {
     <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         <Text className="text-2xl font-bold text-stone-900 mb-1">Desafios de hoje</Text>
-        <Text className="text-stone-500 mb-4">{completedCount}/3 completos</Text>
+        <Text className="text-stone-500 mb-4">{completedCount}/{challengeList.length} completos</Text>
 
         {/* Progress bar */}
         <View className="h-3 bg-stone-200 rounded-full mb-6 overflow-hidden">
           <View
             className="h-full bg-sage-500 rounded-full"
-            style={{ width: `${(completedCount / 3) * 100}%` }}
+            style={{ width: `${(completedCount / challengeList.length) * 100}%` }}
           />
         </View>
 
@@ -446,11 +617,17 @@ export default function ChallengesPage() {
             {active.type === 'mindfulness' && (
               <MindfulnessChallenge challenge={active} onComplete={() => handleComplete(active)} onClose={() => setActive(null)} />
             )}
-            {active.type === 'gratitude' && (
-              <GratitudeChallenge challenge={active} onComplete={() => handleComplete(active)} onClose={() => setActive(null)} />
+            {(active.type === 'gratitude' || active.type === 'thought_record') && (
+              <PromptChallenge challenge={active} type={active.type} onComplete={() => handleComplete(active)} onClose={() => setActive(null)} />
             )}
             {active.type === 'breathing' && (
               <BreathingChallenge challenge={active} onComplete={() => handleComplete(active)} onClose={() => setActive(null)} />
+            )}
+            {active.type === 'grounding' && (
+              <GroundingChallenge challenge={active} onComplete={() => handleComplete(active)} onClose={() => setActive(null)} />
+            )}
+            {active.type === 'relaxation' && (
+              <MuscleRelaxationChallenge challenge={active} onComplete={() => handleComplete(active)} onClose={() => setActive(null)} />
             )}
           </SafeAreaView>
         )}
