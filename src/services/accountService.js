@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { resetProgress } from './progressService';
+import { CONSENT_VERSION, markConsentGiven } from './onboardingService';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -22,6 +23,19 @@ export async function updateName(name) {
     .eq('id', user.id);
   if (error) throw new Error(error.message);
   return trimmed;
+}
+
+// Registra o aceite da versão atual do consentimento LGPD (reconsentimento após
+// mudança no texto). Grava data e versão no perfil e o aceite local.
+export async function acceptConsent() {
+  const user = await getCurrentUser();
+  const { error } = await supabase
+    .from('profiles')
+    .update({ consent_given_at: new Date().toISOString(), consent_version: CONSENT_VERSION })
+    .eq('id', user.id);
+  if (error) throw new Error(error.message);
+  await markConsentGiven();
+  return CONSENT_VERSION;
 }
 
 // Abre a galeria, deixa o usuário recortar (quadrado) e devolve o asset

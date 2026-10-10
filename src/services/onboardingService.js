@@ -3,7 +3,15 @@ import { STORAGE_KEYS } from './storage';
 
 // Versão atual da Política de Privacidade aceita no onboarding. Incrementar
 // quando o texto mudar de forma relevante (permite pedir novo consentimento).
-export const CONSENT_VERSION = '1.0';
+export const CONSENT_VERSION = '1.1';
+
+// true quando o usuário logado aceitou uma versão anterior do consentimento (ou
+// nenhuma). Sem `consentVersion` carregado (perfil ainda não buscado ou falha
+// de rede) retorna false: não bloqueia o app por falta de dado.
+export function needsReconsent(user) {
+  if (!user || !('consentVersion' in user)) return false;
+  return user.consentVersion !== CONSENT_VERSION;
+}
 
 export async function hasCompletedOnboarding() {
   const val = await AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING);

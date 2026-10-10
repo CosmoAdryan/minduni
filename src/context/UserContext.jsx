@@ -166,6 +166,12 @@ export function UserProvider({ children }) {
     setCurrentUser((u) => (u ? { ...u, name: saved } : u));
   }
 
+  // Reaceite do consentimento LGPD após mudança de versão do texto.
+  async function acceptConsent() {
+    const version = await accountService.acceptConsent();
+    setCurrentUser((u) => (u ? { ...u, consentVersion: version } : u));
+  }
+
   async function updateAvatar() {
     const asset = await accountService.pickAvatarImage();
     if (!asset) return false; // usuário cancelou
@@ -305,6 +311,7 @@ export function UserProvider({ children }) {
     verifyRecoveryOtp,
     updatePassword,
     updateName,
+    acceptConsent,
     updateAvatar,
     changePassword,
     clearData,

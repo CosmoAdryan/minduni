@@ -1,6 +1,12 @@
 import { supabase } from '../lib/supabase';
 import { getConsentDate, CONSENT_VERSION } from './onboardingService';
 
+// Versão do consentimento aceita, vinda do perfil. Só inclui o campo se o perfil
+// carregou — ausente, needsReconsent() não pede reaceite (ex.: sem rede).
+function consentFields(profile) {
+  return profile ? { consentVersion: profile.consent_version ?? null } : {};
+}
+
 export async function register(name, email, password) {
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw new Error(error.message);
@@ -15,7 +21,10 @@ export async function register(name, email, password) {
     .insert({ id: user.id, name, consent_given_at: consentAt, consent_version: CONSENT_VERSION });
   if (profileError) throw new Error(profileError.message);
 
-  return { id: user.id, name, email, avatarUrl: null, createdAt: user.created_at };
+  return {
+    id: user.id, name, email, avatarUrl: null, createdAt: user.created_at,
+    consentVersion: CONSENT_VERSION,
+  };
 }
 
 export async function login(email, password) {
@@ -25,7 +34,7 @@ export async function login(email, password) {
   const user = data.user;
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, avatar_url')
+    .select('name, avatar_url, consent_version')
     .eq('id', user.id)
     .single();
 
@@ -35,6 +44,7 @@ export async function login(email, password) {
     email: user.email,
     avatarUrl: profile?.avatar_url ?? null,
     createdAt: user.created_at,
+    ...consentFields(profile),
   };
 }
 
@@ -75,7 +85,7 @@ export async function getCurrentUser() {
   const user = session.user;
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, avatar_url')
+    .select('name, avatar_url, consent_version')
     .eq('id', user.id)
     .single();
 
@@ -85,5 +95,6 @@ export async function getCurrentUser() {
     email: user.email,
     avatarUrl: profile?.avatar_url ?? null,
     createdAt: user.created_at,
+    ...consentFields(profile),
   };
 }

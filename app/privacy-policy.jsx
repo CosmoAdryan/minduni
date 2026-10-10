@@ -48,7 +48,7 @@ export default function PrivacyPolicy() {
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <Text style={{ fontSize: 13, color: '#A29D95', marginBottom: 20 }}>
-          Última atualização: junho de 2026 · Versão 1.0
+          Última atualização: outubro de 2026 · Versão 1.1
         </Text>
 
         <Section title="1. Quem somos">
@@ -101,11 +101,19 @@ export default function PrivacyPolicy() {
           </Bullet>
           <Bullet>
             Google (API Gemini) — processa o texto das suas conversas com o Sage para gerar as
-            respostas. O conteúdo enviado é o necessário para a resposta da conversa.
+            respostas e o resumo que dá continuidade à conversa. Quando você pede um resumo da
+            semana, seus registros de humor do período também são enviados. Seu nome e e-mail não
+            são enviados.
           </Bullet>
           <P>
-            Esses serviços tratam os dados apenas para as finalidades acima e conforme suas próprias
-            políticas de segurança.
+            O MindUni usa o nível gratuito da API Gemini. Pelos termos desse nível, o Google pode
+            utilizar o conteúdo enviado e as respostas geradas para melhorar seus produtos, e esse
+            conteúdo pode ser lido por revisores humanos. Por isso, evite escrever nas conversas dados
+            que identifiquem você ou outras pessoas (nome completo, documentos, endereço, telefone).
+          </P>
+          <P>
+            Esses serviços podem processar os dados em servidores localizados fora do Brasil
+            (transferência internacional, art. 33 da LGPD), autorizada pelo seu consentimento.
           </P>
         </Section>
 
@@ -134,7 +142,7 @@ export default function PrivacyPolicy() {
         <Section title="10. Contato">
           <P>
             Para exercer seus direitos ou tirar dúvidas sobre privacidade, entre em contato pelo e-mail
-            do responsável pelo aplicativo: [preencher com o e-mail de contato].
+            do responsável pelo aplicativo: contato@cosmo.dev.br.
           </P>
         </Section>
       </ScrollView>
