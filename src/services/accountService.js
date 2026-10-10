@@ -56,7 +56,8 @@ export async function pickAvatarImage() {
   return result.assets[0];
 }
 
-// Envia o avatar e grava a URL pública no perfil. Retorna a URL salva.
+// Envia o avatar; a função grava o caminho no perfil e devolve uma URL
+// assinada (o bucket é privado) para exibir na hora.
 //
 // O upload passa pela Edge Function `upload-avatar` (service_role): a RLS do
 // Storage recusava o upload direto a partir do React Native mesmo com o token

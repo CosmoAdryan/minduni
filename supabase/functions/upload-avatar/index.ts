@@ -4,9 +4,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.99.1';
 // instável a partir do cliente React Native). O usuário é identificado pelo
 // próprio token — cada um só grava na pasta {uid}/.
 //
-// Como a função usa service_role e o bucket é público, a validação aqui é a
-// única barreira: só aceita imagem real (magic bytes) de tipo permitido e
-// até MAX_IMAGE_BYTES.
+// Como a função usa service_role, a validação de conteúdo é toda feita aqui
+// (o bucket, privado, só limita tamanho e tipo declarado): só aceita imagem
+// real (magic bytes) de tipo permitido e até MAX_IMAGE_BYTES.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,8 +22,12 @@ const MAX_BASE64_LENGTH = Math.ceil(MAX_IMAGE_BYTES * 4 / 3) + 4;
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
+// Validade da URL assinada devolvida ao app (mesmo valor de AVATAR_URL_TTL_S
+// em src/services/authService.js).
+const SIGNED_URL_TTL_S = 7 * 24 * 60 * 60;
+
 // Confere a assinatura binária: impede gravar HTML/SVG/etc. com contentType
-// de imagem num bucket público (vetor de XSS/phishing).
+// de imagem no bucket (vetor de XSS/phishing se a URL vazar).
 function sniffImageType(bytes: Uint8Array): string | null {
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
     return 'image/jpeg';
@@ -111,14 +115,17 @@ Deno.serve(async (req) => {
     .upload(path, bytes, { contentType: sniffedType, upsert: true });
   if (upErr) return json({ error: upErr.message }, 500);
 
-  const { data: { publicUrl } } = admin.storage.from('avatars').getPublicUrl(path);
-  const url = `${publicUrl}?v=${Date.now()}`;
-
+  // O perfil guarda o caminho; o bucket é privado e a exibição usa URL assinada.
   const { error: updErr } = await admin
     .from('profiles')
-    .update({ avatar_url: url })
+    .update({ avatar_url: path })
     .eq('id', uid);
   if (updErr) return json({ error: updErr.message }, 500);
 
-  return json({ url });
+  const { data: signed, error: signErr } = await admin.storage
+    .from('avatars')
+    .createSignedUrl(path, SIGNED_URL_TTL_S);
+  if (signErr || !signed) return json({ error: signErr?.message ?? 'Falha ao assinar a URL' }, 500);
+
+  return json({ url: signed.signedUrl });
 });

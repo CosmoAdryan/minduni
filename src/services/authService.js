@@ -1,6 +1,21 @@
 import { supabase } from '../lib/supabase';
 import { getConsentDate, CONSENT_VERSION } from './onboardingService';
 
+// Validade da URL assinada do avatar (bucket privado). Mesmo valor de
+// SIGNED_URL_TTL_S na Edge Function upload-avatar.
+const AVATAR_URL_TTL_S = 7 * 24 * 60 * 60;
+
+// profiles.avatar_url guarda o caminho no bucket privado ({uid}/avatar.jpg);
+// a exibição precisa de URL assinada. Falha ao assinar não derruba o login:
+// o app mostra o avatar padrão.
+async function signedAvatarUrl(path) {
+  if (!path) return null;
+  const { data, error } = await supabase.storage
+    .from('avatars')
+    .createSignedUrl(path, AVATAR_URL_TTL_S);
+  return error ? null : data.signedUrl;
+}
+
 // Versão do consentimento aceita, vinda do perfil. Só inclui o campo se o perfil
 // carregou — ausente, needsReconsent() não pede reaceite (ex.: sem rede).
 function consentFields(profile) {
@@ -42,7 +57,7 @@ export async function login(email, password) {
     id: user.id,
     name: profile?.name ?? '',
     email: user.email,
-    avatarUrl: profile?.avatar_url ?? null,
+    avatarUrl: await signedAvatarUrl(profile?.avatar_url),
     createdAt: user.created_at,
     ...consentFields(profile),
   };
@@ -93,7 +108,7 @@ export async function getCurrentUser() {
     id: user.id,
     name: profile?.name ?? '',
     email: user.email,
-    avatarUrl: profile?.avatar_url ?? null,
+    avatarUrl: await signedAvatarUrl(profile?.avatar_url),
     createdAt: user.created_at,
     ...consentFields(profile),
   };
