@@ -11,6 +11,12 @@ expo-env.d.ts
 .env
 .env.local
 .env.production
+# Credenciais do backup: senha do banco, passphrase de cifragem e senha do FTP.
+.env.backup
+
+# Backups do banco. Contêm dados pessoais sensíveis (cifrados, mas ainda assim
+# jamais versionados). Ver scripts/backup-supabase.sh.
+backups/
 
 # Logs
 *.log

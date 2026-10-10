@@ -1,0 +1,87 @@
+# Impede o auto-pause do projeto Supabase no plano Free.
+#
+# O plano Free pausa projetos sem requisições de API por ~7 dias. Este workflow
+# faz duas requisições leves por dia, mantendo o projeto ativo.
+#
+# Bônus: se o projeto estiver pausado ou fora do ar, o job fica vermelho e o
+# GitHub manda e-mail — serve também como alarme de disponibilidade.
+#
+# Secrets necessários (Settings > Secrets and variables > Actions):
+#   SUPABASE_URL       https://<ref>.supabase.co
+#   SUPABASE_ANON_KEY  chave anon/publishable (NUNCA a service_role/secret)
+#
+# A chave publicável já vai embutida no app, então não é segredo de verdade;
+# fica em secret apenas para não expor o ref do projeto no log.
+
+name: Supabase keep-alive
+
+on:
+  schedule:
+    # 09:00 UTC todos os dias (06:00 em Brasília).
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+# O job só faz requisições de saída: nenhuma permissão no repositório.
+permissions: {}
+
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - name: Confere se os secrets estão configurados
+        run: |
+          set -euo pipefail
+          : "${SUPABASE_URL:?defina o secret SUPABASE_URL}"
+          : "${SUPABASE_ANON_KEY:?defina o secret SUPABASE_ANON_KEY}"
+
+      # O endpoint de health do GoTrue exige o header apikey (sem ele: 401).
+      - name: Ping no Auth
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o body.txt -w '%{http_code}' \
+            --max-time 30 --retry 3 --retry-delay 10 --retry-connrefused \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            "${SUPABASE_URL%/}/auth/v1/health")
+          echo "auth/v1/health -> HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::Auth não respondeu 200. Projeto pausado ou fora do ar?"
+            cat body.txt; exit 1
+          fi
+
+      # Este é o ping que importa: precisa chegar ao Postgres, não parar na borda.
+      #
+      # A chave publicável assume o papel `anon`, que não tem GRANT nenhum nas
+      # tabelas (ver migration harden_grants_truncate_and_policy_roles). A
+      # resposta esperada é, portanto, HTTP 401 com SQLSTATE 42501
+      # ("permission denied for table"). Isso é o que queremos: o código 42501 só
+      # pode ter sido gerado pelo próprio Postgres, o que prova que a conexão com
+      # o banco foi aberta e atendida — exatamente a atividade que evita o pause.
+      #
+      # Um 200 também é aceito, para o caso de `anon` ganhar SELECT no futuro.
+      # O que falha o job é a borda responder sem o banco ter sido consultado.
+      - name: Ping no banco (via PostgREST)
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o body.txt -w '%{http_code}' \
+            --max-time 30 --retry 3 --retry-delay 10 --retry-connrefused \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            "${SUPABASE_URL%/}/rest/v1/profiles?select=id&limit=1")
+          echo "rest/v1/profiles -> HTTP $code"
+          if [ "$code" = "200" ] || grep -q '42501' body.txt; then
+            echo "Postgres respondeu. Contagem de inatividade zerada."
+          else
+            echo "::error::O banco não respondeu (sem 200 e sem SQLSTATE 42501)."
+            cat body.txt; exit 1
+          fi
+
+      - name: Resumo
+        run: echo "Projeto ativo em $(date -u '+%Y-%m-%d %H:%M UTC')."
