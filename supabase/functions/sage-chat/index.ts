@@ -48,11 +48,13 @@ const MOOD_LABELS: Record<number, string> = {
   5: 'ótimo (😄)',
 };
 
+// Mantida em sincronia com src/data/chatResponses.js (cliente). O teste
+// src/__tests__/crisisKeywordsSync.test.js quebra se as listas divergirem.
 const CRISIS_KEYWORDS = [
   'suicídio', 'suicidio', 'me matar', 'quero morrer', 'não quero mais viver',
   'nao quero mais viver', 'me machucar', 'acabar com tudo', 'não aguento mais',
-  'nao aguento mais', 'sem saída', 'sem saida', 'tirar minha vida',
-  'me enforcar', 'tomar remédios', 'me cortar', 'me jogar',
+  'nao aguento mais', 'sem saída', 'sem saida', 'desaparecer', 'tirar minha vida',
+  'me jogar', 'me enforcar', 'tomar remédios', 'me cortar',
 ];
 
 function detectCrisis(message: string): boolean {

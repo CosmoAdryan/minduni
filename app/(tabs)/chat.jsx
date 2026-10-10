@@ -272,7 +272,7 @@ export default function ChatPage() {
         <View style={{ backgroundColor: '#FEF8EC', paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center' }}>
           <AlertCircle size={12} color="#B87A28" style={{ marginRight: 6 }} />
           <Text style={{ fontSize: 11, color: '#B87A28', flex: 1 }}>
-            Sage é um apoio complementar, não substitui psicólogos. Crise? CVV: 188
+            Sage é uma IA de apoio: pode errar e não substitui psicólogos. Crise? CVV: 188
           </Text>
         </View>
 

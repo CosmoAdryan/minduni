@@ -20,7 +20,7 @@ export default function LoginPage() {
   async function handleSubmit() {
     setError('');
     if (!email || !password) { setError('Preencha todos os campos'); return; }
-    if (isRegister && !name) { setError('Informe seu nome'); return; }
+    if (isRegister && !name) { setError('Informe seu nome ou apelido'); return; }
     if (isRegister && password.length < 8) { setError('Senha deve ter pelo menos 8 caracteres'); return; }
 
     setLoading(true);
@@ -65,10 +65,10 @@ export default function LoginPage() {
 
             {isRegister && (
               <View className="mb-4">
-                <Text className="text-sm font-medium text-stone-700 mb-1">Nome</Text>
+                <Text className="text-sm font-medium text-stone-700 mb-1">Nome ou apelido</Text>
                 <TextInput
                   className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
-                  placeholder="Seu nome"
+                  placeholder="Como quer ser chamado(a)"
                   placeholderTextColor="#A29D95"
                   value={name}
                   onChangeText={setName}

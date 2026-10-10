@@ -200,11 +200,11 @@ export default function EditProfilePage() {
           </View>
 
           {/* Nome */}
-          <SectionTitle>Nome de usuário</SectionTitle>
+          <SectionTitle>Nome ou apelido</SectionTitle>
           <View className="bg-white rounded-2xl p-4 shadow-sm mb-8">
             <TextInput
               className="bg-stone-100 border border-stone-200 rounded-xl px-4 py-3 text-stone-900"
-              placeholder="Seu nome"
+              placeholder="Como quer ser chamado(a)"
               placeholderTextColor="#A29D95"
               value={name}
               onChangeText={setName}
