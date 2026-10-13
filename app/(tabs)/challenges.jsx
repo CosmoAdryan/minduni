@@ -12,7 +12,24 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import Svg, { Circle } from 'react-native-svg';
-import { CheckCircle, X, Play, Pause, RotateCcw } from 'lucide-react-native';
+import { CheckCircle, X, Play, Pause, RotateCcw, Info } from 'lucide-react-native';
+
+// Aviso fixo nos exercícios corporais (relaxamento e respiração). Alguns
+// indivíduos reagem com excitação paradoxal ao relaxamento (Beck, 2011, p. 264)
+// e a retenção de ar pode causar tontura — o app não tem terapeuta para ajustar.
+function DiscomfortNotice() {
+  return (
+    <View
+      className="flex-row items-center w-full bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5"
+      accessibilityRole="alert"
+    >
+      <Info size={16} color="#B45309" style={{ marginRight: 8 }} />
+      <Text className="flex-1 text-sm text-amber-800">
+        Se sentir desconforto, interrompa o exercício tocando no X.
+      </Text>
+    </View>
+  );
+}
 
 // Dimensões do anel de progresso (timer de meditação).
 const RING_SIZE = 176;
@@ -336,6 +353,7 @@ function MuscleRelaxationChallenge({ challenge, onComplete, onClose }) {
           <X size={24} color="#756F66" />
         </TouchableOpacity>
       </View>
+      <DiscomfortNotice />
       <View className="flex-1 items-center justify-center">
         <View
           className="w-36 h-36 rounded-full items-center justify-center"
@@ -471,6 +489,7 @@ function BreathingChallenge({ challenge, onComplete, onClose }) {
           <X size={24} color="#756F66" />
         </TouchableOpacity>
       </View>
+      <DiscomfortNotice />
       <View className="flex-1 items-center justify-center">
         <View className="w-44 h-44 items-center justify-center">
           {/* Anel que pulsa durante o "segure" */}

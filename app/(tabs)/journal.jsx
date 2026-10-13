@@ -13,6 +13,7 @@ import { journalStreak } from '../../src/lib/journalInsights';
 import { getDailyPrompt } from '../../src/data/journalPrompts';
 import { getPracticeDates } from '../../src/services/challengeService';
 import { exportJournalPdf } from '../../src/services/journalExportService';
+import { getAllEntries } from '../../src/services/journalService';
 
 const MOODS = [
   { value: 1, emoji: '😢', label: 'Muito mal' },
@@ -51,7 +52,8 @@ export default function JournalPage() {
     if (exporting) return;
     setExporting(true);
     try {
-      await exportJournalPdf(entries, currentUser?.name);
+      // Exporta tudo, não só as 50 entradas carregadas na tela.
+      await exportJournalPdf(await getAllEntries(), currentUser?.name);
     } catch (e) {
       showToast('error', '❌ Não foi possível exportar o diário.');
     } finally {
