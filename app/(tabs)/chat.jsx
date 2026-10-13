@@ -81,7 +81,78 @@ function moodLoggedToday(moods) {
   return null;
 }
 
+// Aba Sage sem o aceite específico do envio ao Gemini (LGPD art. 11, I):
+// explica o que é enviado e oferece ativar. O CVV fica visível mesmo aqui.
+function SageConsentGate() {
+  const router = useRouter();
+  const { grantAiConsent } = useUser();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function activate() {
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await grantAiConsent();
+    } catch (e) {
+      setError('Não foi possível ativar agora. Verifique sua conexão e tente novamente.');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <SafeAreaView edges={['top']} className="flex-1 bg-stone-50">
+      <View className="bg-white px-4 py-3 flex-row items-center justify-between border-b border-stone-200">
+        <Text className="font-bold text-stone-900">Sage</Text>
+        <CVVButton compact />
+      </View>
+      <View className="flex-1 px-8 justify-center">
+        <View className="w-20 h-20 rounded-3xl bg-sage-100 items-center justify-center self-center mb-5">
+          <Sparkles size={36} color="#3D7A67" />
+        </View>
+        <Text className="text-xl font-bold text-stone-900 text-center mb-3">Ativar o Sage</Text>
+        <Text className="text-stone-600 text-center leading-6 mb-3">
+          O Sage é um assistente de IA para conversar sobre como você está se sentindo. Para
+          gerar as respostas, o conteúdo das conversas (e, se você pedir um resumo da semana,
+          seus registros de humor) é enviado ao Google (Gemini). Seu nome e e-mail não são enviados.
+        </Text>
+        <Text className="text-stone-500 text-center text-sm leading-5 mb-6">
+          É opcional: diário, desafios e agenda funcionam sem ele. Você pode desativar quando
+          quiser no seu perfil, e suas conversas são apagadas.
+        </Text>
+        {error && <Text className="text-red-600 text-center text-sm mb-3">{error}</Text>}
+        <TouchableOpacity
+          className="bg-sage-500 py-4 rounded-2xl items-center"
+          onPress={activate}
+          disabled={saving}
+          accessibilityRole="button"
+          accessibilityLabel="Autorizar o envio das conversas ao Google Gemini e ativar o Sage"
+        >
+          {saving
+            ? <ActivityIndicator color="white" />
+            : <Text className="text-white font-bold">Autorizar e ativar o Sage</Text>}
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => router.push('/privacy-policy')}
+          accessibilityRole="link"
+          className="py-4 items-center"
+        >
+          <Text className="text-sage-600 font-semibold">Ler a Política de Privacidade</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+// Sem aceite do Sage, mostra a ativação; com aceite, o chat. O bloqueio real
+// está na Edge Function sage-chat — aqui é só a interface.
 export default function ChatPage() {
+  const { currentUser } = useUser();
+  return currentUser?.aiConsentAt ? <ChatScreen /> : <SageConsentGate />;
+}
+
+function ChatScreen() {
   const { progress, addMoodEntry, onSageMessageSent, getJournalEntries, addTask } = useUser();
   const router = useRouter();
   // Sugestões de agenda da última resposta do Sage (efêmeras). Cada item ganha

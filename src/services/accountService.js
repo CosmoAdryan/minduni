@@ -26,16 +26,59 @@ export async function updateName(name) {
 }
 
 // Registra o aceite da versão atual do consentimento LGPD (reconsentimento após
-// mudança no texto). Grava data e versão no perfil e o aceite local.
-export async function acceptConsent() {
+// mudança no texto). Grava data e versão no perfil e o aceite local. O aceite
+// do Sage é decidido junto: marcado grava a data; desmarcado equivale a revogar
+// (apaga as conversas). Retorna { version, aiConsentAt }.
+export async function acceptConsent(aiConsent) {
   const user = await getCurrentUser();
+  const now = new Date().toISOString();
+  if (!aiConsent) await deleteChatHistory(user.id);
   const { error } = await supabase
     .from('profiles')
-    .update({ consent_given_at: new Date().toISOString(), consent_version: CONSENT_VERSION })
+    .update({
+      consent_given_at: now,
+      consent_version: CONSENT_VERSION,
+      ai_consent_at: aiConsent ? now : null,
+    })
     .eq('id', user.id);
   if (error) throw new Error(error.message);
   await markConsentGiven();
-  return CONSENT_VERSION;
+  return { version: CONSENT_VERSION, aiConsentAt: aiConsent ? now : null };
+}
+
+// Apaga todas as conversas do usuário (mensagens antes das sessões, por FK).
+// As sessões levam junto o resumo acumulado (chat_sessions.summary).
+async function deleteChatHistory(uid) {
+  const { error: msgErr } = await supabase.from('chat_messages').delete().eq('user_id', uid);
+  if (msgErr) throw new Error(msgErr.message);
+  const { error: sessErr } = await supabase.from('chat_sessions').delete().eq('user_id', uid);
+  if (sessErr) throw new Error(sessErr.message);
+}
+
+// Ativa o Sage: aceite específico do envio das conversas ao Gemini
+// (LGPD art. 11, I). Retorna a data registrada.
+export async function grantAiConsent() {
+  const user = await getCurrentUser();
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('profiles')
+    .update({ ai_consent_at: now })
+    .eq('id', user.id);
+  if (error) throw new Error(error.message);
+  return now;
+}
+
+// Desativa o Sage (revogação, LGPD art. 8º, § 5º): apaga o histórico e o resumo
+// das conversas e retira o aceite. Apaga antes de retirar o aceite para que uma
+// falha no meio não deixe o usuário sem aceite e com as conversas guardadas.
+export async function revokeAiConsent() {
+  const user = await getCurrentUser();
+  await deleteChatHistory(user.id);
+  const { error } = await supabase
+    .from('profiles')
+    .update({ ai_consent_at: null })
+    .eq('id', user.id);
+  if (error) throw new Error(error.message);
 }
 
 // Abre a galeria, deixa o usuário recortar (quadrado) e devolve o asset

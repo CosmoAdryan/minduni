@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { getConsentDate, CONSENT_VERSION } from './onboardingService';
+import { getConsentDate, getAiConsentDate, CONSENT_VERSION } from './onboardingService';
 
 // Validade da URL assinada do avatar (bucket privado). Mesmo valor de
 // SIGNED_URL_TTL_S na Edge Function upload-avatar.
@@ -19,7 +19,9 @@ async function signedAvatarUrl(path) {
 // Versão do consentimento aceita, vinda do perfil. Só inclui o campo se o perfil
 // carregou — ausente, needsReconsent() não pede reaceite (ex.: sem rede).
 function consentFields(profile) {
-  return profile ? { consentVersion: profile.consent_version ?? null } : {};
+  return profile
+    ? { consentVersion: profile.consent_version ?? null, aiConsentAt: profile.ai_consent_at ?? null }
+    : {};
 }
 
 export async function register(name, email, password) {
@@ -31,14 +33,19 @@ export async function register(name, email, password) {
   // Vincula o consentimento LGPD (dado no onboarding) à conta. Usa a data do
   // aceite local; se ausente, registra o momento do cadastro como fallback.
   const consentAt = (await getConsentDate()) ?? new Date().toISOString();
+  // Aceite do Sage (opcional): só existe se foi marcado no onboarding.
+  const aiConsentAt = await getAiConsentDate();
   const { error: profileError } = await supabase
     .from('profiles')
-    .insert({ id: user.id, name, consent_given_at: consentAt, consent_version: CONSENT_VERSION });
+    .insert({
+      id: user.id, name, consent_given_at: consentAt, consent_version: CONSENT_VERSION,
+      ai_consent_at: aiConsentAt,
+    });
   if (profileError) throw new Error(profileError.message);
 
   return {
     id: user.id, name, email, avatarUrl: null, createdAt: user.created_at,
-    consentVersion: CONSENT_VERSION,
+    consentVersion: CONSENT_VERSION, aiConsentAt,
   };
 }
 
@@ -49,7 +56,7 @@ export async function login(email, password) {
   const user = data.user;
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, avatar_url, consent_version')
+    .select('name, avatar_url, consent_version, ai_consent_at')
     .eq('id', user.id)
     .single();
 
@@ -100,7 +107,7 @@ export async function getCurrentUser() {
   const user = session.user;
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, avatar_url, consent_version')
+    .select('name, avatar_url, consent_version, ai_consent_at')
     .eq('id', user.id)
     .single();
 

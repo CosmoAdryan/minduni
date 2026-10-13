@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Dimensions, Image } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Brain, MessageCircle, Target, Shield, Lock } from 'lucide-react-native';
-import { markOnboardingDone, markConsentGiven } from '../../src/services/onboardingService';
+import { markOnboardingDone, markConsentGiven, markAiConsent } from '../../src/services/onboardingService';
 import ConsentContent from '../../src/components/ConsentContent';
 
 const { width } = Dimensions.get('window');
@@ -54,6 +54,7 @@ const SLIDES = [
 export default function Onboarding() {
   const [current, setCurrent] = useState(0);
   const [consented, setConsented] = useState(false);
+  const [aiConsented, setAiConsented] = useState(false);
   const scrollRef = useRef(null);
   const router = useRouter();
 
@@ -65,6 +66,7 @@ export default function Onboarding() {
   async function finish() {
     // Registra o consentimento LGPD antes de concluir o onboarding.
     await markConsentGiven();
+    await markAiConsent(aiConsented);
     await markOnboardingDone();
     router.replace('/(auth)/login');
   }
@@ -131,6 +133,8 @@ export default function Onboarding() {
                   <ConsentContent
                     consented={consented}
                     onToggle={() => setConsented((v) => !v)}
+                    aiConsented={aiConsented}
+                    onToggleAi={() => setAiConsented((v) => !v)}
                     onOpenPolicy={() => router.push('/privacy-policy')}
                   />
                 </ScrollView>

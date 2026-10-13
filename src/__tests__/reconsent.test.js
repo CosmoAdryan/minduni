@@ -27,3 +27,21 @@ describe('needsReconsent', () => {
     expect(needsReconsent({ id: 'u1', consentVersion: null })).toBe(true);
   });
 });
+
+// Aceite opcional do Sage dado no onboarding (antes de existir conta): fica no
+// aparelho até o cadastro copiá-lo para profiles.ai_consent_at.
+describe('aceite local do Sage (onboarding)', () => {
+  const { markAiConsent, getAiConsentDate } = require('../services/onboardingService');
+
+  it('registra a data do aceite quando marcado', async () => {
+    await markAiConsent(true);
+    const date = await getAiConsentDate();
+    expect(Number.isNaN(Date.parse(date))).toBe(false);
+  });
+
+  it('remove o aceite quando desmarcado (cadastro grava NULL)', async () => {
+    await markAiConsent(true);
+    await markAiConsent(false);
+    expect(await getAiConsentDate()).toBeNull();
+  });
+});

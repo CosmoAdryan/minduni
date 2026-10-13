@@ -11,19 +11,34 @@ import ConsentContent from '../src/components/ConsentContent';
 // devolve às abas. Recusar não libera o app: a pessoa sai da conta ou a exclui.
 export default function Reconsent() {
   const router = useRouter();
-  const { acceptConsent, logout } = useUser();
+  const { currentUser, acceptConsent, logout } = useUser();
   const [consented, setConsented] = useState(false);
+  // Parte do estado atual: quem já tinha o Sage ativo vem com a caixa marcada.
+  const [aiConsented, setAiConsented] = useState(!!currentUser?.aiConsentAt);
   const [saving, setSaving] = useState(false);
 
-  async function accept() {
-    if (!consented || saving) return;
+  async function save() {
     setSaving(true);
     try {
-      await acceptConsent();
+      await acceptConsent(aiConsented);
     } catch (e) {
       Alert.alert('Não foi possível salvar', e?.message || 'Verifique sua conexão e tente novamente.');
       setSaving(false);
     }
+  }
+
+  function accept() {
+    if (!consented || saving) return;
+    if (aiConsented) { save(); return; }
+    // Sem o aceite do Sage, as conversas anteriores são apagadas (revogação).
+    Alert.alert(
+      'Continuar sem o Sage?',
+      'Sem autorizar o envio ao Google (Gemini), o chat fica desativado e as conversas que você já teve com o Sage serão apagadas. Você pode ativá-lo de novo depois.',
+      [
+        { text: 'Voltar', style: 'cancel' },
+        { text: 'Continuar sem o Sage', style: 'destructive', onPress: save },
+      ],
+    );
   }
 
   function decline() {
@@ -60,14 +75,17 @@ export default function Reconsent() {
         <View style={{ backgroundColor: '#FEF8EC', borderRadius: 16, padding: 14, marginBottom: 18 }}>
           <Text style={{ fontSize: 14, color: '#5A544C', lineHeight: 21 }}>
             <Text style={{ fontWeight: '700' }}>O que mudou: </Text>
-            agora explicamos que as conversas com o Sage são processadas pelo Google (Gemini) e como
-            esse provedor pode usá-las. Para continuar, precisamos do seu aceite novamente.
+            o envio das conversas com o Sage ao Google (Gemini) agora tem um aceite próprio e
+            opcional. Sem ele, o resto do app continua funcionando. Para continuar, precisamos do
+            seu aceite novamente.
           </Text>
         </View>
 
         <ConsentContent
           consented={consented}
           onToggle={() => setConsented((v) => !v)}
+          aiConsented={aiConsented}
+          onToggleAi={() => setAiConsented((v) => !v)}
           onOpenPolicy={() => router.push('/privacy-policy')}
         />
       </ScrollView>

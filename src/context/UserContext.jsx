@@ -167,9 +167,21 @@ export function UserProvider({ children }) {
   }
 
   // Reaceite do consentimento LGPD após mudança de versão do texto.
-  async function acceptConsent() {
-    const version = await accountService.acceptConsent();
-    setCurrentUser((u) => (u ? { ...u, consentVersion: version } : u));
+  async function acceptConsent(aiConsent) {
+    const { version, aiConsentAt } = await accountService.acceptConsent(aiConsent);
+    setCurrentUser((u) => (u ? { ...u, consentVersion: version, aiConsentAt } : u));
+  }
+
+  // Aceite específico do Sage (envio das conversas ao Gemini).
+  async function grantAiConsent() {
+    const aiConsentAt = await accountService.grantAiConsent();
+    setCurrentUser((u) => (u ? { ...u, aiConsentAt } : u));
+  }
+
+  // Revogação: apaga as conversas e bloqueia o chat.
+  async function revokeAiConsent() {
+    await accountService.revokeAiConsent();
+    setCurrentUser((u) => (u ? { ...u, aiConsentAt: null } : u));
   }
 
   async function updateAvatar() {
@@ -312,6 +324,8 @@ export function UserProvider({ children }) {
     updatePassword,
     updateName,
     acceptConsent,
+    grantAiConsent,
+    revokeAiConsent,
     updateAvatar,
     changePassword,
     clearData,

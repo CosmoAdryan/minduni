@@ -48,7 +48,7 @@ export default function PrivacyPolicy() {
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <Text style={{ fontSize: 13, color: '#A29D95', marginBottom: 20 }}>
-          Última atualização: outubro de 2026 · Versão 1.1
+          Última atualização: outubro de 2026 · Versão 1.2
         </Text>
 
         <Section title="1. Quem somos">
@@ -66,7 +66,7 @@ export default function PrivacyPolicy() {
         <Section title="2. Dados que coletamos">
           <Bullet>Dados de conta: nome e e-mail informados no cadastro.</Bullet>
           <Bullet>Registros de humor e anotações do diário emocional.</Bullet>
-          <Bullet>Conteúdo das suas conversas com o assistente Sage.</Bullet>
+          <Bullet>Conteúdo das suas conversas com o assistente Sage, se você ativá-lo.</Bullet>
           <Bullet>Progresso de uso: XP, sequências, práticas e desafios concluídos.</Bullet>
         </Section>
 
@@ -75,14 +75,16 @@ export default function PrivacyPolicy() {
             Registros de humor, anotações do diário e conversas com o Sage podem revelar informações
             sobre sua saúde emocional. A LGPD classifica esses como dados pessoais sensíveis (art. 11),
             tratados apenas mediante o seu consentimento específico e destacado, dado no início do uso
-            do aplicativo.
+            do aplicativo. O envio das conversas ao Google (Gemini) tem um consentimento próprio e
+            opcional, separado do aceite geral: sem ele, o Sage fica desativado e o restante do app
+            funciona normalmente.
           </P>
         </Section>
 
         <Section title="4. Para que usamos seus dados">
           <Bullet>Permitir o funcionamento do app e personalizar o apoio oferecido.</Bullet>
           <Bullet>Acompanhar a evolução do seu bem-estar ao longo do tempo.</Bullet>
-          <Bullet>Gerar as respostas do Sage durante as conversas.</Bullet>
+          <Bullet>Gerar as respostas do Sage durante as conversas, se você o ativar.</Bullet>
           <P>Não utilizamos seus dados para publicidade e não os vendemos a terceiros.</P>
         </Section>
 
@@ -100,7 +102,8 @@ export default function PrivacyPolicy() {
             armazenados.
           </Bullet>
           <Bullet>
-            Google (API Gemini) — processa o texto das suas conversas com o Sage para gerar as
+            Google (API Gemini) — somente se você ativar o Sage. Processa o texto das suas conversas
+            com o Sage para gerar as
             respostas e o resumo que dá continuidade à conversa. Quando você pede um resumo da
             semana, seus registros de humor do período também são enviados. Seu nome e e-mail não
             são enviados.
@@ -136,7 +139,11 @@ export default function PrivacyPolicy() {
           <P>A qualquer momento, você pode:</P>
           <Bullet>Acessar e corrigir seus dados.</Bullet>
           <Bullet>Solicitar a exclusão dos seus dados e da sua conta.</Bullet>
-          <Bullet>Revogar o consentimento, deixando de usar o aplicativo.</Bullet>
+          <Bullet>
+            Desativar o Sage no seu perfil, revogando o consentimento do envio ao Google (Gemini).
+            Suas conversas com o Sage e o resumo delas são apagados, e nada mais é enviado.
+          </Bullet>
+          <Bullet>Revogar o consentimento geral, deixando de usar o aplicativo.</Bullet>
         </Section>
 
         <Section title="10. Contato">

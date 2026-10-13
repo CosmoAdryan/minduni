@@ -275,6 +275,20 @@ serve(async (req) => {
       });
     }
 
+    // Consentimento específico para o envio ao Gemini (LGPD art. 11, I). Sem ele,
+    // nada desta conversa sai para o Google — o bloqueio vale aqui, não só na UI.
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('ai_consent_at')
+      .eq('id', userId)
+      .maybeSingle();
+    if (!profileRow?.ai_consent_at) {
+      return new Response(
+        JSON.stringify({ error: 'Ative o Sage para conversar.', code: 'AI_CONSENT_REQUIRED' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     // Humor opcional do check-in diário. Mantém o Sage coerente com o estado
     // real do usuário (sem presumir sobrecarga).
     const moodLabelForContext = mood ? MOOD_LABELS[mood] ?? null : null;
