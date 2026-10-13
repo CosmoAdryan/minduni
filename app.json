@@ -20,7 +20,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.minduni.app",
-      "versionCode": 6,
+      "versionCode": 7,
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ]
