@@ -78,7 +78,9 @@ const DEFAULT_RESPONSES = [
   'Estou ouvindo. Como você está lidando com essa situação?',
 ];
 
-const CRISIS_KEYWORDS = [
+// Mantida em sincronia com supabase/functions/sage-chat/index.ts (servidor).
+// O teste src/__tests__/crisisKeywordsSync.test.js quebra se divergirem.
+export const CRISIS_KEYWORDS = [
   'suicídio', 'suicidio', 'me matar', 'quero morrer', 'não quero mais viver',
   'nao quero mais viver', 'me machucar', 'acabar com tudo', 'não aguento mais',
   'nao aguento mais', 'sem saída', 'sem saida', 'desaparecer', 'tirar minha vida',

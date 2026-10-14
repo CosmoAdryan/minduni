@@ -97,7 +97,8 @@ export const BREATHING_CHALLENGES = [
 // ── Desafios baseados em TCC (terapia cognitivo-comportamental) ──────────────
 
 // Registro de pensamentos (RPD): situação → pensamento automático → emoção →
-// evidências → reestruturação. Mesma mecânica de prompts da gratidão.
+// evidências → pensamento alternativo → reavaliação da emoção (coluna
+// "Resultado", Beck, 2011, p. 194). Mesma mecânica de prompts da gratidão.
 export const THOUGHT_RECORD_CHALLENGES = [
   {
     id: 'thought_record_1',
@@ -112,6 +113,7 @@ export const THOUGHT_RECORD_CHALLENGES = [
       'Que emoção você sentiu? Dê uma nota de 0 a 10 para a intensidade...',
       'Quais fatos apoiam esse pensamento? E quais o contradizem?',
       'Reescreva o pensamento de um jeito mais equilibrado e realista...',
+      'Releia o pensamento alternativo. Agora, de 0 a 10, qual a intensidade daquela emoção?',
     ],
   },
 ];

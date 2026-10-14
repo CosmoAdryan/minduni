@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { resetProgress } from './progressService';
+import { CONSENT_VERSION, markConsentGiven } from './onboardingService';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -24,6 +25,62 @@ export async function updateName(name) {
   return trimmed;
 }
 
+// Registra o aceite da versão atual do consentimento LGPD (reconsentimento após
+// mudança no texto). Grava data e versão no perfil e o aceite local. O aceite
+// do Sage é decidido junto: marcado grava a data; desmarcado equivale a revogar
+// (apaga as conversas). Retorna { version, aiConsentAt }.
+export async function acceptConsent(aiConsent) {
+  const user = await getCurrentUser();
+  const now = new Date().toISOString();
+  if (!aiConsent) await deleteChatHistory(user.id);
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      consent_given_at: now,
+      consent_version: CONSENT_VERSION,
+      ai_consent_at: aiConsent ? now : null,
+    })
+    .eq('id', user.id);
+  if (error) throw new Error(error.message);
+  await markConsentGiven();
+  return { version: CONSENT_VERSION, aiConsentAt: aiConsent ? now : null };
+}
+
+// Apaga todas as conversas do usuário (mensagens antes das sessões, por FK).
+// As sessões levam junto o resumo acumulado (chat_sessions.summary).
+async function deleteChatHistory(uid) {
+  const { error: msgErr } = await supabase.from('chat_messages').delete().eq('user_id', uid);
+  if (msgErr) throw new Error(msgErr.message);
+  const { error: sessErr } = await supabase.from('chat_sessions').delete().eq('user_id', uid);
+  if (sessErr) throw new Error(sessErr.message);
+}
+
+// Ativa o Sage: aceite específico do envio das conversas ao Gemini
+// (LGPD art. 11, I). Retorna a data registrada.
+export async function grantAiConsent() {
+  const user = await getCurrentUser();
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('profiles')
+    .update({ ai_consent_at: now })
+    .eq('id', user.id);
+  if (error) throw new Error(error.message);
+  return now;
+}
+
+// Desativa o Sage (revogação, LGPD art. 8º, § 5º): apaga o histórico e o resumo
+// das conversas e retira o aceite. Apaga antes de retirar o aceite para que uma
+// falha no meio não deixe o usuário sem aceite e com as conversas guardadas.
+export async function revokeAiConsent() {
+  const user = await getCurrentUser();
+  await deleteChatHistory(user.id);
+  const { error } = await supabase
+    .from('profiles')
+    .update({ ai_consent_at: null })
+    .eq('id', user.id);
+  if (error) throw new Error(error.message);
+}
+
 // Abre a galeria, deixa o usuário recortar (quadrado) e devolve o asset
 // selecionado (com base64). Retorna null se o usuário cancelar.
 export async function pickAvatarImage() {
@@ -42,7 +99,8 @@ export async function pickAvatarImage() {
   return result.assets[0];
 }
 
-// Envia o avatar e grava a URL pública no perfil. Retorna a URL salva.
+// Envia o avatar; a função grava o caminho no perfil e devolve uma URL
+// assinada (o bucket é privado) para exibir na hora.
 //
 // O upload passa pela Edge Function `upload-avatar` (service_role): a RLS do
 // Storage recusava o upload direto a partir do React Native mesmo com o token

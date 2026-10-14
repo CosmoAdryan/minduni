@@ -14,7 +14,7 @@ import {
   Inter_800ExtraBold,
 } from '@expo-google-fonts/inter';
 import { Lora_400Regular_Italic } from '@expo-google-fonts/lora';
-import { hasCompletedOnboarding } from '../src/services/onboardingService';
+import { hasCompletedOnboarding, needsReconsent } from '../src/services/onboardingService';
 import { syncReminderOnLaunch } from '../src/services/notificationService';
 import XPToast from '../src/components/XPToast';
 import BadgeToast from '../src/components/BadgeToast';
@@ -33,6 +33,15 @@ function AuthGuard() {
       const inOnboarding = segments[0] === '(onboarding)';
       const inAuthGroup = segments[0] === '(auth)';
       const inTabs = segments[0] === '(tabs)';
+      // Consentimento desatualizado (o texto mudou desde o aceite): o usuário
+      // logado só acessa a tela de reaceite e as que ela oferece (política e
+      // exclusão de conta) até aceitar a versão atual.
+      if (currentUser && needsReconsent(currentUser)) {
+        const RECONSENT_ROUTES = ['reconsent', 'privacy-policy', 'edit-profile'];
+        if (!RECONSENT_ROUTES.includes(segments[0])) router.replace('/reconsent');
+        return;
+      }
+
       // Rotas públicas acessíveis em qualquer estado (logado ou não) — não
       // sofrem redirecionamento do guard.
       const PUBLIC_ROUTES = ['privacy-policy', 'edit-profile', 'agenda'];

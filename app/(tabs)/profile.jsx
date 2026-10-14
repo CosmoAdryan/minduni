@@ -20,7 +20,7 @@ import BadgeCard from '../../src/components/BadgeCard';
 const CATEGORY_BADGE_GOAL = 10;
 
 export default function ProfilePage() {
-  const { currentUser, progress, logout } = useUser();
+  const { currentUser, progress, logout, grantAiConsent, revokeAiConsent } = useUser();
   const router = useRouter();
   const [messageCount, setMessageCount] = useState(0);
   const [practiceStats, setPracticeStats] = useState({ total: 0, byCategory: {} });
@@ -48,6 +48,35 @@ export default function ProfilePage() {
         'Para receber lembretes, ative as notificações do MindUni nas configurações do seu aparelho.',
       );
     }
+  }
+
+  // Aceite do Sage (envio das conversas ao Gemini). Ativar é direto; desativar
+  // é a revogação (LGPD art. 8º, § 5º) e apaga o histórico, por isso confirma.
+  const sageEnabled = !!currentUser?.aiConsentAt;
+  const [sageSaving, setSageSaving] = useState(false);
+
+  async function runSage(action) {
+    setSageSaving(true);
+    try {
+      await action();
+    } catch (e) {
+      Alert.alert('Não foi possível salvar', 'Verifique sua conexão e tente novamente.');
+    } finally {
+      setSageSaving(false);
+    }
+  }
+
+  function toggleSage(value) {
+    if (sageSaving) return;
+    if (value) { runSage(grantAiConsent); return; }
+    Alert.alert(
+      'Desativar o Sage?',
+      'Suas conversas com o Sage e o resumo delas serão apagados de forma definitiva, e nada mais será enviado ao Google (Gemini). Você pode ativá-lo de novo depois, começando uma conversa nova.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Desativar e apagar', style: 'destructive', onPress: () => runSage(revokeAiConsent) },
+      ],
+    );
   }
 
   async function pickTime(time) {
@@ -245,6 +274,32 @@ export default function ProfilePage() {
               </View>
             </View>
           )}
+        </View>
+
+        {/* Sage: aceite do envio das conversas ao Gemini */}
+        <Text className="font-bold text-stone-900 text-lg mb-3">Sage</Text>
+        <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+          <View className="flex-row items-center">
+            <View className="w-10 h-10 rounded-2xl items-center justify-center mr-3" style={{ backgroundColor: '#EEF5F1' }}>
+              <MessageCircle size={20} color="#3D7A67" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-semibold text-stone-800">Conversas com o Sage</Text>
+              <Text className="text-xs text-stone-500 mt-0.5">
+                {sageEnabled
+                  ? 'Ativo: as conversas são enviadas ao Google (Gemini). Desativar apaga o histórico.'
+                  : 'Desativado: nada é enviado ao Google (Gemini).'}
+              </Text>
+            </View>
+            <Switch
+              value={sageEnabled}
+              onValueChange={toggleSage}
+              disabled={sageSaving}
+              trackColor={{ false: '#E6E2DB', true: '#A9D3BF' }}
+              thumbColor={sageEnabled ? '#3D7A67' : '#FAFAF8'}
+              accessibilityLabel="Ativar conversas com o Sage"
+            />
+          </View>
         </View>
 
         {/* Política de Privacidade */}

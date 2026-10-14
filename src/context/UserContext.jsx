@@ -166,6 +166,24 @@ export function UserProvider({ children }) {
     setCurrentUser((u) => (u ? { ...u, name: saved } : u));
   }
 
+  // Reaceite do consentimento LGPD após mudança de versão do texto.
+  async function acceptConsent(aiConsent) {
+    const { version, aiConsentAt } = await accountService.acceptConsent(aiConsent);
+    setCurrentUser((u) => (u ? { ...u, consentVersion: version, aiConsentAt } : u));
+  }
+
+  // Aceite específico do Sage (envio das conversas ao Gemini).
+  async function grantAiConsent() {
+    const aiConsentAt = await accountService.grantAiConsent();
+    setCurrentUser((u) => (u ? { ...u, aiConsentAt } : u));
+  }
+
+  // Revogação: apaga as conversas e bloqueia o chat.
+  async function revokeAiConsent() {
+    await accountService.revokeAiConsent();
+    setCurrentUser((u) => (u ? { ...u, aiConsentAt: null } : u));
+  }
+
   async function updateAvatar() {
     const asset = await accountService.pickAvatarImage();
     if (!asset) return false; // usuário cancelou
@@ -305,6 +323,9 @@ export function UserProvider({ children }) {
     verifyRecoveryOtp,
     updatePassword,
     updateName,
+    acceptConsent,
+    grantAiConsent,
+    revokeAiConsent,
     updateAvatar,
     changePassword,
     clearData,

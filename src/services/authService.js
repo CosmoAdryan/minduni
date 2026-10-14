@@ -1,5 +1,28 @@
 import { supabase } from '../lib/supabase';
-import { getConsentDate, CONSENT_VERSION } from './onboardingService';
+import { getConsentDate, getAiConsentDate, CONSENT_VERSION } from './onboardingService';
+
+// Validade da URL assinada do avatar (bucket privado). Mesmo valor de
+// SIGNED_URL_TTL_S na Edge Function upload-avatar.
+const AVATAR_URL_TTL_S = 7 * 24 * 60 * 60;
+
+// profiles.avatar_url guarda o caminho no bucket privado ({uid}/avatar.jpg);
+// a exibição precisa de URL assinada. Falha ao assinar não derruba o login:
+// o app mostra o avatar padrão.
+async function signedAvatarUrl(path) {
+  if (!path) return null;
+  const { data, error } = await supabase.storage
+    .from('avatars')
+    .createSignedUrl(path, AVATAR_URL_TTL_S);
+  return error ? null : data.signedUrl;
+}
+
+// Versão do consentimento aceita, vinda do perfil. Só inclui o campo se o perfil
+// carregou — ausente, needsReconsent() não pede reaceite (ex.: sem rede).
+function consentFields(profile) {
+  return profile
+    ? { consentVersion: profile.consent_version ?? null, aiConsentAt: profile.ai_consent_at ?? null }
+    : {};
+}
 
 export async function register(name, email, password) {
   const { data, error } = await supabase.auth.signUp({ email, password });
@@ -10,12 +33,20 @@ export async function register(name, email, password) {
   // Vincula o consentimento LGPD (dado no onboarding) à conta. Usa a data do
   // aceite local; se ausente, registra o momento do cadastro como fallback.
   const consentAt = (await getConsentDate()) ?? new Date().toISOString();
+  // Aceite do Sage (opcional): só existe se foi marcado no onboarding.
+  const aiConsentAt = await getAiConsentDate();
   const { error: profileError } = await supabase
     .from('profiles')
-    .insert({ id: user.id, name, consent_given_at: consentAt, consent_version: CONSENT_VERSION });
+    .insert({
+      id: user.id, name, consent_given_at: consentAt, consent_version: CONSENT_VERSION,
+      ai_consent_at: aiConsentAt,
+    });
   if (profileError) throw new Error(profileError.message);
 
-  return { id: user.id, name, email, avatarUrl: null, createdAt: user.created_at };
+  return {
+    id: user.id, name, email, avatarUrl: null, createdAt: user.created_at,
+    consentVersion: CONSENT_VERSION, aiConsentAt,
+  };
 }
 
 export async function login(email, password) {
@@ -25,7 +56,7 @@ export async function login(email, password) {
   const user = data.user;
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, avatar_url')
+    .select('name, avatar_url, consent_version, ai_consent_at')
     .eq('id', user.id)
     .single();
 
@@ -33,8 +64,9 @@ export async function login(email, password) {
     id: user.id,
     name: profile?.name ?? '',
     email: user.email,
-    avatarUrl: profile?.avatar_url ?? null,
+    avatarUrl: await signedAvatarUrl(profile?.avatar_url),
     createdAt: user.created_at,
+    ...consentFields(profile),
   };
 }
 
@@ -75,7 +107,7 @@ export async function getCurrentUser() {
   const user = session.user;
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, avatar_url')
+    .select('name, avatar_url, consent_version, ai_consent_at')
     .eq('id', user.id)
     .single();
 
@@ -83,7 +115,8 @@ export async function getCurrentUser() {
     id: user.id,
     name: profile?.name ?? '',
     email: user.email,
-    avatarUrl: profile?.avatar_url ?? null,
+    avatarUrl: await signedAvatarUrl(profile?.avatar_url),
     createdAt: user.created_at,
+    ...consentFields(profile),
   };
 }

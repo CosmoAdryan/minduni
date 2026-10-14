@@ -2,8 +2,9 @@ import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Dimensions, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Brain, MessageCircle, Target, Shield, Lock, CheckSquare, Square } from 'lucide-react-native';
-import { markOnboardingDone, markConsentGiven } from '../../src/services/onboardingService';
+import { Brain, MessageCircle, Target, Shield, Lock } from 'lucide-react-native';
+import { markOnboardingDone, markConsentGiven, markAiConsent } from '../../src/services/onboardingService';
+import ConsentContent from '../../src/components/ConsentContent';
 
 const { width } = Dimensions.get('window');
 
@@ -22,7 +23,7 @@ const SLIDES = [
     bg: '#D4E9DE',
     title: 'Converse com o Sage',
     description:
-      'O Sage te ouve com atenção e sem pressa. Ele não substitui um profissional — caminha ao seu lado, sempre que você precisar.',
+      'O Sage é um assistente de inteligência artificial que te ouve com atenção e sem pressa. Ele pode errar e não substitui um profissional — caminha ao seu lado, sempre que você precisar.',
   },
   {
     Icon: Target,
@@ -53,6 +54,7 @@ const SLIDES = [
 export default function Onboarding() {
   const [current, setCurrent] = useState(0);
   const [consented, setConsented] = useState(false);
+  const [aiConsented, setAiConsented] = useState(false);
   const scrollRef = useRef(null);
   const router = useRouter();
 
@@ -64,6 +66,7 @@ export default function Onboarding() {
   async function finish() {
     // Registra o consentimento LGPD antes de concluir o onboarding.
     await markConsentGiven();
+    await markAiConsent(aiConsented);
     await markOnboardingDone();
     router.replace('/(auth)/login');
   }
@@ -127,57 +130,13 @@ export default function Onboarding() {
                     </Text>
                   </View>
 
-                  <Text style={{ fontSize: 14, color: '#5A544C', lineHeight: 22, marginBottom: 14 }}>
-                    Para acompanhar seu bem-estar, o MindUni guarda alguns dados seus:
-                  </Text>
-
-                  {[
-                    'Seus registros de humor e anotações do diário',
-                    'Suas conversas com o Sage',
-                    'Seu progresso (XP, sequências e práticas concluídas)',
-                  ].map((item) => (
-                    <View key={item} style={{ flexDirection: 'row', marginBottom: 8, paddingRight: 8 }}>
-                      <Text style={{ color: '#3D7A67', marginRight: 8, fontSize: 14 }}>•</Text>
-                      <Text style={{ fontSize: 14, color: '#5A544C', lineHeight: 20, flex: 1 }}>{item}</Text>
-                    </View>
-                  ))}
-
-                  <Text style={{ fontSize: 14, color: '#5A544C', lineHeight: 22, marginTop: 8 }}>
-                    Esses são <Text style={{ fontWeight: '700' }}>dados sensíveis de saúde</Text>. Eles
-                    são usados apenas para o funcionamento do app, ficam armazenados de forma segura e
-                    nunca são vendidos. Você pode acessar ou apagar seus dados quando quiser, no seu
-                    perfil.
-                  </Text>
-
-                  <TouchableOpacity
-                    onPress={() => router.push('/privacy-policy')}
-                    accessibilityRole="link"
-                    accessibilityLabel="Abrir a Política de Privacidade completa"
-                    style={{ marginTop: 12 }}
-                  >
-                    <Text style={{ fontSize: 14, color: '#2D6254', fontWeight: '600' }}>
-                      Leia a Política de Privacidade completa
-                    </Text>
-                  </TouchableOpacity>
-
-                  {/* Aceite explícito (opt-in) — exigido pela LGPD para dado sensível */}
-                  <TouchableOpacity
-                    style={{ flexDirection: 'row', alignItems: 'flex-start', marginTop: 20, padding: 4 }}
-                    onPress={() => setConsented((v) => !v)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: consented }}
-                    accessibilityLabel="Concordo com o tratamento dos meus dados conforme a LGPD"
-                  >
-                    <View style={{ marginRight: 10, marginTop: 1 }}>
-                      {consented
-                        ? <CheckSquare size={24} color="#3D7A67" />
-                        : <Square size={24} color="#CEC9BF" />}
-                    </View>
-                    <Text style={{ fontSize: 13, color: '#3A3731', flex: 1, lineHeight: 19 }}>
-                      Li e concordo com o tratamento dos meus dados de saúde emocional para uso no
-                      MindUni, conforme a Lei Geral de Proteção de Dados (LGPD).
-                    </Text>
-                  </TouchableOpacity>
+                  <ConsentContent
+                    consented={consented}
+                    onToggle={() => setConsented((v) => !v)}
+                    aiConsented={aiConsented}
+                    onToggleAi={() => setAiConsented((v) => !v)}
+                    onOpenPolicy={() => router.push('/privacy-policy')}
+                  />
                 </ScrollView>
               </View>
             );
