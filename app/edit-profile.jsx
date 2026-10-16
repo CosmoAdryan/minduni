@@ -94,7 +94,7 @@ export default function EditProfilePage() {
   function confirmClearData() {
     Alert.alert(
       'Limpar meus dados',
-      'Isso apaga seus registros de humor, anotações do diário, conversas com o Sage, práticas e progresso. Sua conta continua ativa. Esta ação não pode ser desfeita.',
+      'Isso apaga seus registros de humor, anotações do diário, conversas com o Sage, tarefas da agenda, práticas e progresso. Sua conta continua ativa. Esta ação não pode ser desfeita.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -316,7 +316,7 @@ export default function EditProfilePage() {
             <View className="flex-1">
               <Text className="font-semibold" style={{ color: '#B45309' }}>Limpar meus dados</Text>
               <Text className="text-stone-500 text-xs mt-0.5">
-                Apaga humor, diário, conversas, práticas e progresso. Mantém a conta.
+                Apaga humor, diário, conversas, agenda, práticas e progresso. Mantém a conta.
               </Text>
             </View>
           </TouchableOpacity>

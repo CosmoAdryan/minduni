@@ -52,7 +52,7 @@ export async function getAllEntries() {
 }
 
 // Cria a entrada via RPC (gam_add_journal_entry): o servidor grava a entrada,
-// atualiza o contador, premia +20 XP e recalcula badges numa única transação.
+// atualiza o contador, premia +20 XP (só a 1ª entrada do dia) e recalcula badges numa única transação.
 // Returns { entry, progress: <linha db>, journalXP }.
 export async function addEntry(mood, text) {
   const { data, error } = await supabase.rpc('gam_add_journal_entry', {

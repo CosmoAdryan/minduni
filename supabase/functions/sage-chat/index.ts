@@ -57,9 +57,12 @@ const CRISIS_KEYWORDS = [
   'me jogar', 'me enforcar', 'tomar remédios', 'me cortar',
 ];
 
+// Minúsculas e sem acentos: "REMEDIOS", "remédios" e "remedios" são iguais.
+const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 function detectCrisis(message: string): boolean {
-  const lower = message.toLowerCase();
-  return CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
+  const text = normalize(message);
+  return CRISIS_KEYWORDS.some((kw) => text.includes(normalize(kw)));
 }
 
 type AgendaSuggestion = { time: string | null; title: string; recurrence: 'none' | 'daily' | 'weekly' };

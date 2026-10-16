@@ -9,7 +9,7 @@ import { useUser } from '../../src/context/UserContext';
 import MoodOption from '../../src/components/MoodOption';
 import MoodChart from '../../src/components/MoodChart';
 import WeeklyInsights from '../../src/components/WeeklyInsights';
-import { journalStreak } from '../../src/lib/journalInsights';
+import { journalStreak, localDayKey } from '../../src/lib/journalInsights';
 import { getDailyPrompt } from '../../src/data/journalPrompts';
 import { getPracticeDates } from '../../src/services/challengeService';
 import { exportJournalPdf } from '../../src/services/journalExportService';
@@ -41,6 +41,9 @@ export default function JournalPage() {
 
   const dailyPrompt = getDailyPrompt();
   const streak = journalStreak(entries);
+  // Só a primeira entrada do dia vale XP (regra aplicada no servidor).
+  const todayKey = localDayKey(new Date());
+  const earnsXP = !entries.some((e) => localDayKey(e.date) === todayKey);
 
   useEffect(() => {
     loadEntries();
@@ -80,8 +83,8 @@ export default function JournalPage() {
     if (!selectedMood || !text.trim()) return;
     setSaving(true);
     try {
-      // O +20 XP é aplicado no servidor junto com a entrada e comunicado pelo
-      // XPToast global (evita aviso duplicado).
+      // O +20 XP (só na primeira entrada do dia) é aplicado no servidor junto
+      // com a entrada e comunicado pelo XPToast global (evita aviso duplicado).
       await addJournalEntry(selectedMood, text.trim());
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSelectedMood(null);
@@ -186,7 +189,7 @@ export default function JournalPage() {
           className={`py-4 rounded-2xl items-center mb-6 ${canSave ? 'bg-sage-500' : 'bg-stone-200'}`}
           onPress={handleSave}
           disabled={!canSave}
-          accessibilityLabel="Salvar entrada do diário e ganhar 20 XP"
+          accessibilityLabel={earnsXP ? 'Salvar entrada do diário e ganhar 20 XP' : 'Salvar entrada do diário'}
           accessibilityRole="button"
           accessibilityState={{ disabled: !canSave }}
         >
@@ -194,7 +197,7 @@ export default function JournalPage() {
             <ActivityIndicator color="white" />
           ) : (
             <Text className={`font-bold ${canSave ? 'text-white' : 'text-stone-400'}`}>
-              Salvar entrada (+20 XP)
+              {earnsXP ? 'Salvar entrada (+20 XP)' : 'Salvar entrada'}
             </Text>
           )}
         </TouchableOpacity>

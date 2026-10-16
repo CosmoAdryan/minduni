@@ -96,7 +96,7 @@ export async function applyLogin() {
   return { progress, loginXP: awardedXP };
 }
 
-// Primeira mensagem do dia no chat: streak próprio (5 → 50) e first_chat.
+// Primeira mensagem do dia no chat: +10 XP fixo, streak próprio (só p/ badge) e first_chat.
 // Returns { progress, chatXP } — chatXP é 0 se já recompensou hoje.
 export async function applyChatStreak() {
   const { progress, awardedXP } = await callRpc('gam_apply_chat_streak');

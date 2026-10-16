@@ -25,6 +25,12 @@ describe('detectCrisis', () => {
     expect(detectCrisis('Não Aguento Mais')).toBe(true);
   });
 
+  it('detecta independente de acentos', () => {
+    expect(detectCrisis('vou tomar remedios')).toBe(true);
+    expect(detectCrisis('NÃO AGUENTO MAIS')).toBe(true);
+    expect(detectCrisis('me jogar da ponte, sem saida')).toBe(true);
+  });
+
   it('detecta a frase dentro de uma mensagem maior', () => {
     expect(detectCrisis('ultimamente eu tenho pensado que quero morrer, sabe')).toBe(true);
   });
