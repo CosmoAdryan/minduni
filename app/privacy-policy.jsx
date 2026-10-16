@@ -48,7 +48,7 @@ export default function PrivacyPolicy() {
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <Text style={{ fontSize: 13, color: '#A29D95', marginBottom: 20 }}>
-          Última atualização: outubro de 2026 · Versão 1.2
+          Última atualização: outubro de 2026 · Versão 1.3
         </Text>
 
         <Section title="1. Quem somos">
@@ -64,9 +64,10 @@ export default function PrivacyPolicy() {
         </Section>
 
         <Section title="2. Dados que coletamos">
-          <Bullet>Dados de conta: nome e e-mail informados no cadastro.</Bullet>
+          <Bullet>Dados de conta: nome e e-mail informados no cadastro e, se você enviar, a foto de perfil.</Bullet>
           <Bullet>Registros de humor e anotações do diário emocional.</Bullet>
           <Bullet>Conteúdo das suas conversas com o assistente Sage, se você ativá-lo.</Bullet>
+          <Bullet>Tarefas da agenda: título, descrição, data, horário e recorrência.</Bullet>
           <Bullet>Progresso de uso: XP, sequências, práticas e desafios concluídos.</Bullet>
         </Section>
 
@@ -103,16 +104,19 @@ export default function PrivacyPolicy() {
           </Bullet>
           <Bullet>
             Google (API Gemini) — somente se você ativar o Sage. Processa o texto das suas conversas
-            com o Sage para gerar as
-            respostas e o resumo que dá continuidade à conversa. Quando você pede um resumo da
-            semana, seus registros de humor do período também são enviados. Seu nome e e-mail não
-            são enviados.
+            com o Sage para gerar as respostas e o resumo que dá continuidade à conversa. Também
+            recebe os registros de humor que você informar no Sage e, quando você pede um resumo da
+            semana, os registros de humor do período. Seu nome e e-mail não são enviados.
           </Bullet>
           <P>
-            O MindUni usa o nível gratuito da API Gemini. Pelos termos desse nível, o Google pode
-            utilizar o conteúdo enviado e as respostas geradas para melhorar seus produtos, e esse
-            conteúdo pode ser lido por revisores humanos. Por isso, evite escrever nas conversas dados
-            que identifiquem você ou outras pessoas (nome completo, documentos, endereço, telefone).
+            O MindUni usa a API Gemini na modalidade paga. Pelos termos do Google para essa
+            modalidade, o conteúdo das conversas e as respostas geradas não são usados pelo Google
+            para melhorar os produtos dele. O Google mantém registros por tempo limitado, apenas para
+            detectar e prevenir violações da sua política de uso, manter a segurança do serviço e
+            cumprir obrigações legais, conforme os seus termos de uso da API. Esses dados podem ser
+            armazenados temporariamente em servidores do Google fora do Brasil.
+            Ainda assim, evite escrever nas conversas dados que identifiquem você ou outras pessoas
+            (nome completo, documentos, endereço, telefone).
           </P>
           <P>
             Esses serviços podem processar os dados em servidores localizados fora do Brasil
@@ -138,7 +142,14 @@ export default function PrivacyPolicy() {
         <Section title="9. Seus direitos">
           <P>A qualquer momento, você pode:</P>
           <Bullet>Acessar e corrigir seus dados.</Bullet>
-          <Bullet>Solicitar a exclusão dos seus dados e da sua conta.</Bullet>
+          <Bullet>
+            Limpar seus dados de uso no seu perfil: humor, diário, conversas com o Sage, agenda,
+            práticas e progresso são apagados, e a conta (nome, e-mail e foto) continua ativa.
+          </Bullet>
+          <Bullet>
+            Excluir sua conta no seu perfil: a conta e todos os dados, inclusive a foto, são
+            apagados definitivamente.
+          </Bullet>
           <Bullet>
             Desativar o Sage no seu perfil, revogando o consentimento do envio ao Google (Gemini).
             Suas conversas com o Sage e o resumo delas são apagados, e nada mais é enviado.

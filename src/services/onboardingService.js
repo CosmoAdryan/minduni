@@ -4,7 +4,9 @@ import { STORAGE_KEYS } from './storage';
 // Versão atual da Política de Privacidade aceita no onboarding. Incrementar
 // quando o texto mudar de forma relevante (permite pedir novo consentimento).
 // 1.2: o envio das conversas ao Gemini passou a ter aceite próprio e opcional.
-export const CONSENT_VERSION = '1.2';
+// 1.3: Gemini na modalidade paga (sem uso para melhorar produtos); agenda e
+//      foto de perfil listadas nos dados coletados; "limpar dados" nos direitos.
+export const CONSENT_VERSION = '1.3';
 
 // true quando o usuário logado aceitou uma versão anterior do consentimento (ou
 // nenhuma). Sem `consentVersion` carregado (perfil ainda não buscado ou falha

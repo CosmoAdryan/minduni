@@ -43,6 +43,7 @@ export default function ConsentContent({
       {[
         'Seus registros de humor e anotações do diário',
         'Suas conversas com o Sage, se você ativá-lo',
+        'Suas tarefas da agenda',
         'Seu progresso (XP, sequências e práticas concluídas)',
       ].map((item) => (
         <View key={item} style={{ flexDirection: 'row', marginBottom: 8, paddingRight: 8 }}>
@@ -94,10 +95,13 @@ export default function ConsentContent({
           </Text>
         </View>
         <Text style={{ fontSize: 13, color: '#5A544C', lineHeight: 20, marginBottom: 10 }}>
-          Para gerar as respostas do Sage, o conteúdo das conversas (e, se você pedir um
-          resumo da semana, seus registros de humor) é enviado ao{' '}
+          Para gerar as respostas do Sage, o conteúdo das conversas e os registros de humor que
+          você informar (incluindo os da semana, se pedir um resumo) são enviados ao{' '}
           <Text style={{ fontWeight: '700' }}>Google (Gemini)</Text>. Seu nome e e-mail não
-          são enviados. Sem este aceite, o resto do app funciona normalmente e você pode
+          são enviados. O Google não usa esse conteúdo para melhorar os produtos dele e mantém
+          registros por tempo limitado, apenas para detectar e prevenir violações da sua política
+          de uso, manter a segurança do serviço e cumprir obrigações legais. Esses dados podem ser
+          processados em servidores do Google fora do Brasil. Sem este aceite, o resto do app funciona normalmente e você pode
           ativar o Sage depois. Ao desativar, suas conversas são apagadas.
         </Text>
         <ConsentCheckbox

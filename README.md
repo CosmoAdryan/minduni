@@ -87,7 +87,7 @@ Conquistas recém-desbloqueadas aparecem como um toast (`BadgeToast`); a descri�
 - **Tela de edição de perfil**: alterar **foto**, **nome** e **senha** (com reautenticação)
 - **Política de Privacidade** acessível dentro do app
 - **Recuperação de senha por código (OTP)** enviado por e-mail
-- **Limpar meus dados**: apaga humor, diário, conversas, práticas e progresso, mantendo a conta
+- **Limpar meus dados**: apaga humor, diário, conversas, agenda, práticas e progresso, mantendo a conta
 - **Excluir minha conta**: remoção definitiva da conta e de todos os dados
 
 ---
