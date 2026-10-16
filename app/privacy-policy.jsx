@@ -100,7 +100,8 @@ export default function PrivacyPolicy() {
           <P>Para funcionar, o app utiliza serviços de terceiros que atuam como operadores:</P>
           <Bullet>
             Supabase — provê a infraestrutura de banco de dados e autenticação onde seus dados ficam
-            armazenados.
+            armazenados, em servidores localizados nos Estados Unidos (região East US, Norte da
+            Virgínia).
           </Bullet>
           <Bullet>
             Google (API Gemini) — somente se você ativar o Sage. Processa o texto das suas conversas
