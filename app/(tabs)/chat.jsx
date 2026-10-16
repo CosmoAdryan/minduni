@@ -114,8 +114,12 @@ function SageConsentGate() {
         <Text className="text-xl font-bold text-stone-900 text-center mb-3">Ativar o Sage</Text>
         <Text className="text-stone-600 text-center leading-6 mb-3">
           O Sage é um assistente de IA para conversar sobre como você está se sentindo. Para
-          gerar as respostas, o conteúdo das conversas (e, se você pedir um resumo da semana,
-          seus registros de humor) é enviado ao Google (Gemini). Seu nome e e-mail não são enviados.
+          gerar as respostas, o conteúdo das conversas e os registros de humor que você informar
+          (incluindo os da semana, se pedir um resumo) são enviados ao Google (Gemini). Seu nome e
+          e-mail não são enviados. O Google não usa esse conteúdo para melhorar os produtos dele e
+          mantém registros por tempo limitado, apenas para detectar e prevenir violações da sua
+          política de uso, manter a segurança do serviço e cumprir obrigações legais. Esses dados
+          podem ser processados em servidores do Google fora do Brasil.
         </Text>
         <Text className="text-stone-500 text-center text-sm leading-5 mb-6">
           É opcional: diário, desafios e agenda funcionam sem ele. Você pode desativar quando
@@ -264,11 +268,15 @@ function ChatScreen() {
     setSuggestions([]); // some sugestões antigas ao enviar nova mensagem
     if (typeof preset !== 'string') setInput('');
 
-    // Aplica o streak de mensagem do dia (5->50) e marca a primeira conversa
-    // (badge first_chat). Guardado por data/estado internamente.
-    onSageMessageSent();
-
-    if (detectCrisis(text)) setCrisisVisible(true);
+    // Mensagem de crise não concede XP nem badge: nada de comemoração
+    // (toast/háptico) junto com o CrisisModal.
+    if (detectCrisis(text)) {
+      setCrisisVisible(true);
+    } else {
+      // Aplica o XP fixo do dia de conversa (+10) e marca a primeira conversa
+      // (badge first_chat). Guardado por data/estado internamente.
+      onSageMessageSent();
+    }
 
     setTyping(true);
     try {
