@@ -27,7 +27,7 @@ const MOODS = [
 const MOOD_COLORS = ['#3B6FAB', '#6B8FAB', '#888787', '#5E9B84', '#C9963A'];
 
 export default function JournalPage() {
-  const { addJournalEntry, getJournalEntries, currentUser } = useUser();
+  const { addJournalEntry, getJournalEntries, currentUser, dataVersion } = useUser();
   const [selectedMood, setSelectedMood] = useState(null);
   const [text, setText] = useState('');
   const [entries, setEntries] = useState([]);
@@ -49,7 +49,7 @@ export default function JournalPage() {
     loadEntries();
     // Datas de prática para a correlação humor × prática (falha silenciosa).
     getPracticeDates(30).then(setPracticeDates).catch(() => {});
-  }, []);
+  }, [dataVersion]);
 
   async function handleExport() {
     if (exporting) return;

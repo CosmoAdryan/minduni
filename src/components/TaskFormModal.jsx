@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal, View, Text, TextInput, TouchableOpacity, Pressable, ActivityIndicator,
-  Switch, ScrollView, Keyboard,
+  Switch, ScrollView, Keyboard, KeyboardAvoidingView,
 } from 'react-native';
 import { X, Clock } from 'lucide-react-native';
 import { stone, sage } from '../theme/tokens';
@@ -123,7 +123,9 @@ export default function TaskFormModal({ visible, defaultDate, onClose, onSubmit 
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      {/* Sobe o formulário junto com o teclado; sem isso o teclado cobria o
+          campo no Android (teste funcional da v1.0, CT-08). */}
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1, justifyContent: 'flex-end' }}>
         {/* Fundo: toque fora fecha. É um irmão do sheet (não o envolve), para
             não capturar o gesto de rolagem das rodas de horário. */}
         <Pressable
@@ -233,7 +235,7 @@ export default function TaskFormModal({ visible, defaultDate, onClose, onSubmit 
               : <Text style={{ color: 'white', fontWeight: '700', fontSize: 15 }}>Adicionar à agenda</Text>}
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

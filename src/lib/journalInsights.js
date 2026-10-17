@@ -1,6 +1,8 @@
 // Cálculos puros sobre as entradas do diário — sem I/O, para serem testáveis e
 // reaproveitados na UI (Home e Diário). Uma entrada tem { mood: 1..5, date }.
 
+import { todayKeySaoPaulo } from './streak';
+
 export const MOOD_EMOJIS = ['😢', '😔', '😐', '😊', '😄'];
 const WEEKDAYS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 
@@ -15,8 +17,8 @@ export function localDayKey(date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// Chave de dia em UTC — usada SÓ na correlação, para casar com o formato
-// gravado em challenge_logs.completed_date (toISOString().split('T')[0]).
+// Chave de dia em UTC. Não usar para casar com challenge_logs.completed_date,
+// que é gravado no fuso de Brasília (ver moodPracticeCorrelation).
 export function utcDayKey(date) {
   return new Date(date).toISOString().split('T')[0];
 }
@@ -130,13 +132,15 @@ export function journalStreak(entries, now = new Date()) {
  * concluiu alguma prática com o dos dias em que não concluiu.
  *
  * @param {Array} entries Entradas do diário.
- * @param {Set<string>} practiceDays Datas 'YYYY-MM-DD' (UTC) com prática concluída.
+ * @param {Set<string>} practiceDays Datas 'YYYY-MM-DD' (fuso de Brasília) com prática concluída.
  * @param {number} minDays Mínimo de dias em cada grupo para o dado ser confiável.
  * @returns {{meanWith, meanWithout, diff, daysWith, daysWithout} | null}
  */
 export function moodPracticeCorrelation(entries, practiceDays, minDays = 2) {
   const set = practiceDays instanceof Set ? practiceDays : new Set(practiceDays || []);
-  const byDay = dailyAverages(validEntries(entries), utcDayKey);
+  // Mesmo fuso de challenge_logs.completed_date (Brasília), senão as entradas
+  // feitas entre 21h e 23h59 caem no dia seguinte e não casam com a prática.
+  const byDay = dailyAverages(validEntries(entries), (d) => todayKeySaoPaulo(new Date(d)));
 
   const withP = [];
   const withoutP = [];

@@ -19,6 +19,9 @@ export function UserProvider({ children }) {
   const [xpNotification, setXpNotification] = useState(null);
   const [badgeNotification, setBadgeNotification] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Incrementa quando os dados de uso são apagados ("Limpar meus dados"): as
+  // telas que carregam dados uma vez (Sage, Diário, Práticas) recarregam.
+  const [dataVersion, setDataVersion] = useState(0);
   const [isRecovering, setIsRecovering] = useState(false);
   // Ref espelha isRecovering para uso dentro do listener de auth (closure).
   const recoveringRef = useRef(false);
@@ -200,6 +203,7 @@ export function UserProvider({ children }) {
   async function clearData() {
     const fresh = await accountService.clearUserData();
     setProgress(fresh ?? { ...progressService.INITIAL_PROGRESS });
+    setDataVersion((v) => v + 1);
   }
 
   // Exclui a conta definitivamente e limpa o estado local (volta ao login).
@@ -310,6 +314,7 @@ export function UserProvider({ children }) {
   const value = {
     currentUser,
     progress,
+    dataVersion,
     loading,
     isRecovering,
     xpNotification,

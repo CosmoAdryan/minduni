@@ -545,14 +545,14 @@ const CATEGORY_STYLE = {
 };
 
 export default function ChallengesPage() {
-  const { completeChallengeToday, getCompletedChallenges } = useUser();
+  const { completeChallengeToday, getCompletedChallenges, dataVersion } = useUser();
   const [completed, setCompleted] = useState([]);
   const [active, setActive] = useState(null);
   const [weekData, setWeekData] = useState([false, false, false, false, false, false, false]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [dataVersion]);
 
   async function loadData() {
     const [done, week] = await Promise.all([

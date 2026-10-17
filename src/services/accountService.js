@@ -88,15 +88,33 @@ export async function pickAvatarImage() {
   if (!perm.granted) {
     throw new Error('Precisamos da permissão de acesso às fotos para alterar o avatar.');
   }
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
-    allowsEditing: true,
-    aspect: [1, 1],
-    quality: 0.5,
-    base64: true,
-  });
+  let result;
+  try {
+    result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+  } catch (e) {
+    throw new Error(galleryErrorMessage(e));
+  }
   if (result.canceled) return null;
   return result.assets[0];
+}
+
+// Android: depois de um uso longo, o vínculo nativo com a galeria pode se
+// perder ("unregistered ActivityResultLauncher", expo-modules-core) e só volta
+// ao reabrir o app (teste funcional da v1.0, CT-11). A causa está na
+// biblioteca; aqui só trocamos o erro técnico por uma orientação.
+export const GALLERY_UNAVAILABLE_MESSAGE =
+  'Não foi possível abrir a galeria agora. Feche o MindUni por completo, abra de novo e tente outra vez.';
+
+export function galleryErrorMessage(error) {
+  const msg = String(error?.message || '');
+  if (msg.includes('unregistered ActivityResultLauncher')) return GALLERY_UNAVAILABLE_MESSAGE;
+  return msg || 'Não foi possível abrir a galeria.';
 }
 
 // Envia o avatar; a função grava o caminho no perfil e devolve uma URL
