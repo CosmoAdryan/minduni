@@ -157,7 +157,7 @@ export default function ChatPage() {
 }
 
 function ChatScreen() {
-  const { progress, addMoodEntry, onSageMessageSent, getJournalEntries, addTask } = useUser();
+  const { progress, addMoodEntry, onSageMessageSent, getJournalEntries, addTask, dataVersion } = useUser();
   const router = useRouter();
   // Sugestões de agenda da última resposta do Sage (efêmeras). Cada item ganha
   // um card "Adicionar à agenda". `added` marca as já adicionadas nesta sessão.
@@ -203,6 +203,10 @@ function ChatScreen() {
   // vazia, pede a saudação de abertura ao Sage.
   useEffect(() => {
     let active = true;
+    // Após "Limpar meus dados" a conversa antiga foi apagada no servidor:
+    // descarta a que estava na tela antes de reabrir.
+    setMessages([]);
+    setLoading(true);
     (async () => {
       try {
         const session = await chatService.getOrCreateSession();
@@ -234,7 +238,7 @@ function ChatScreen() {
     })();
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [dataVersion]);
 
   // Calcula o resumo do humor da semana (para o botão "Resumir minha semana").
   useEffect(() => {
